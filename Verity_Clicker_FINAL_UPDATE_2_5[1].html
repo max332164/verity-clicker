@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Verity Clicker</title>
+<script src="https://yandex.ru/games/sdk/v2"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--gold:#ffd84b;--gold2:#ffb700;--purple:#2a1f52;--txt:#eae6ff;--muted:#a9a2c5}
+html,body{margin:0;padding:0}
+body{min-height:100vh;background:radial-gradient(circle at 50% 20%,#33255c,#151029 60%,#0d0a1c);color:var(--txt);font-family:Arial,Helvetica,sans-serif;user-select:none;-webkit-user-select:none}
+#app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:14px 14px calc(230px + env(safe-area-inset-bottom));position:relative}body{overflow-x:hidden;overflow-y:auto}.screen{width:100%;padding-bottom:18px}#screen-main{padding-bottom:38px}
+.screen{display:none;flex-direction:column;align-items:center;animation:fadein .25s}
+.screen.active{display:flex}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gtitle{font-size:28px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,#fff4a3,#ffb700);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:6px 0 2px}
+.balbox{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px 30px;text-align:center;margin-top:6px}
+.bal-lbl{color:var(--muted);font-size:12px;letter-spacing:1px}
+.bal{font-size:32px;font-weight:900;color:var(--gold);text-shadow:0 0 18px rgba(255,183,0,.45)}
+.coin-icon{display:inline-block;width:.58em;height:.58em;vertical-align:-.02em;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff5a6 0 12%,#ffd84b 35%,#e99a12 78%,#a95d08 100%);border:1px solid #ffe98a;box-shadow:0 0 7px rgba(255,190,35,.45);position:relative;flex:none}
+.coin-icon:after{content:"";position:absolute;inset:18%;border:1px solid rgba(255,255,210,.75);border-radius:50%}
+.chips{display:flex;gap:8px;margin-top:10px}
+.chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:7px 12px;font-size:13px;color:var(--muted)}
+.chip b{color:var(--gold)}
+/* КОМБО */
+#comboBox{display:none;align-items:center;gap:8px;margin-top:12px;background:rgba(255,216,75,.1);border:1px solid rgba(255,216,75,.4);border-radius:20px;padding:6px 16px;color:var(--gold);font-weight:bold;box-shadow:0 0 18px rgba(255,183,0,.25)}
+#comboCount{font-size:20px;display:inline-block}
+#comboCount.pop{animation:pop .3s}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.45)}100%{transform:scale(1)}}
+#comboMult{font-size:13px;background:rgba(255,183,0,.25);padding:2px 8px;border-radius:10px}
+/* ВЕРИТИ */
+.wrap{position:relative;width:230px;height:230px;display:flex;align-items:center;justify-content:center;margin:26px 0 8px}
+.glow{position:absolute;width:200px;height:200px;border-radius:50%;background:#ffcc32;filter:blur(60px);opacity:.25;transition:opacity .2s,transform .2s}
+.wrap.pressed .glow{opacity:.6;transform:scale(1.25)}
+.orb{width:175px;height:175px;border-radius:34px;position:relative;z-index:2;cursor:pointer;background:radial-gradient(circle at 32% 25%,#fff9b0,#ffe65c 23%,#ffc928 55%,#e99a12 100%);box-shadow:inset -10px -14px 22px rgba(190,105,0,.25),inset 8px 8px 18px rgba(255,255,255,.55),0 0 30px rgba(255,196,35,.4),0 12px 30px rgba(0,0,0,.4);transition:transform .1s;touch-action:manipulation}
+.orb:active{transform:scale(.92)}
+.eyes{position:absolute;top:34%;width:100%;display:flex;justify-content:center;gap:38px;pointer-events:none}
+.eyes i{width:12px;height:20px;background:#38260d;border-radius:50%;display:block}
+.mouth{position:absolute;width:28px;height:14px;border-bottom:4px solid #75420b;border-radius:50%;top:56%;left:calc(50% - 14px);pointer-events:none}
+.hint{color:var(--muted);font-size:13px}
+/* ОПЫТ */
+.xpline{width:88%;max-width:340px;margin-top:14px}
+.xpbar{height:14px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.15)}
+.xpfill{height:100%;width:0;background:linear-gradient(90deg,#ffd84b,#ff9d00);border-radius:10px;transition:width .3s}
+.xptext{color:var(--muted);font-size:12px;text-align:center;margin-top:4px}
+.lvlbadge{background:linear-gradient(145deg,#7a4dd9,#4a2b9e);border-radius:12px;padding:5px 14px;font-weight:bold;font-size:14px;box-shadow:0 0 14px rgba(122,77,217,.5);margin-top:8px}
+/* СОБЫТИЯ */
+#banner{display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;background:linear-gradient(145deg,#ffcf32,#e9960f);color:#3a2500;font-weight:bold;padding:9px 18px;border-radius:14px;box-shadow:0 4px 20px rgba(255,183,0,.5);font-size:14px;white-space:nowrap}
+/* РЕКЛАМА */
+.adrow{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.adbtn{border:none;border-radius:16px;padding:10px 16px;font-weight:bold;font-size:13px;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);transition:transform .15s}
+.adbtn:active{transform:scale(.96)}
+.adbtn.watch{background:linear-gradient(145deg,#ffb02e,#e08700)}
+.adbtn.free{background:linear-gradient(145deg,#9a5cff,#6a2bd9)}
+
+/* ПРЕДПРОСМОТР МЕСТА ПОД STICKY-БАННЕР (только вне Яндекс Игр) */
+#adPreview{display:none;position:fixed;z-index:45;left:50%;bottom:calc(62px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(100%,480px);height:54px;padding:5px 12px;background:rgba(12,9,25,.96);border-top:1px dashed rgba(255,216,75,.55);border-bottom:1px dashed rgba(255,216,75,.55);align-items:center;justify-content:center;text-align:center;color:#bdb4d9;font-size:11px;letter-spacing:.4px}
+#adPreview b{display:block;color:#ffd84b;font-size:12px;margin-bottom:2px}
+#adPreview small{font-size:10px;color:#8f87aa}
+
+/* НАВИГАЦИЯ */
+#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;overflow-x:auto;background:rgba(20,14,42,.95);border-top:1px solid rgba(255,255,255,.12);z-index:50;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+#nav button{position:relative;flex:1 0 58px;background:none;border:none;color:var(--muted);font-size:11px;font-family:inherit;padding:6px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:10px}
+#nav button .ic{font-size:20px}
+#nav button.active{color:var(--gold);background:rgba(255,216,75,.1)}
+/* МАГАЗИН */
+.shop-tabs{display:flex;gap:8px;margin-top:12px}
+.shop-tab{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--muted);border-radius:12px;padding:9px 6px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer}
+.shop-tab.active{background:linear-gradient(145deg,#ffcf32,#e9960f);color:#3a2500;border-color:transparent}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:12px}
+.card{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px;display:flex;flex-direction:column;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.card-visual{height:58px;display:flex;align-items:center;justify-content:center;margin:-2px 0 7px;border-radius:12px;background:radial-gradient(circle,rgba(255,216,75,.16),rgba(255,255,255,.025) 68%);font-size:36px;text-shadow:0 4px 12px rgba(0,0,0,.35)}.card-visual span{display:inline-block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.25));animation:iconFloat 2.8s ease-in-out infinite}@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.card-head b{font-size:14px}
+.lvl{color:var(--gold);font-size:12px;white-space:nowrap}
+.card-desc{color:var(--muted);font-size:12px;margin:6px 0 10px;flex:1}
+.card-foot{display:flex;justify-content:space-between;align-items:center}
+.price{color:var(--gold);font-weight:bold;font-size:13px}
+button.buy,button.act{background:linear-gradient(145deg,#ffcf32,#e9960f);color:#3a2500;border:none;border-radius:12px;padding:8px 14px;font-weight:bold;font-family:inherit;font-size:13px;cursor:pointer;box-shadow:0 3px 12px rgba(255,183,0,.4);transition:transform .15s,box-shadow .2s}
+button.buy:hover,button.act:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(255,183,0,.6)}
+button.buy:disabled,button.act:disabled{background:rgba(255,255,255,.12);color:var(--muted);box-shadow:none;cursor:default;transform:none}
+/* СКИНЫ */
+.skin-card{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .15s,border-color .2s}
+.skin-card:active{transform:scale(.96)}
+.skin-card.sel{border-color:var(--gold);box-shadow:0 0 16px rgba(255,216,75,.4)}
+.skin-card p{color:var(--muted);font-size:11px;margin:0}
+.skin-card b{font-size:13px}
+.skin-price{font-size:12px;color:var(--gold);font-weight:bold}
+.skin-card.locked .skin-price{color:#8f88ab}
+.vorb{width:64px;height:64px;border-radius:16px;position:relative;background:radial-gradient(circle at 32% 25%,#fff9b0,#ffe65c 23%,#ffc928 55%,#e99a12 100%)}
+.vorb .eyes{top:26%;gap:12px}
+.vorb .eyes i{width:5px;height:8px}
+.vorb .mouth{width:12px;height:7px;border-bottom-width:2px;top:48%;left:calc(50% - 6px)}
+/* СКИНЫ — ЦВЕТА И АНИМАЦИИ */
+.wrap.skin-red .orb,.vorb.skin-red{background:radial-gradient(circle at 32% 25%,#ffd6d6,#ff8080 25%,#d92b2b 60%,#7c1010)}
+.wrap.skin-red .glow{background:#ff4d4d}
+.wrap.skin-blue .orb,.vorb.skin-blue{background:radial-gradient(circle at 32% 25%,#d0e8ff,#7ab8ff 25%,#2b6ad9 60%,#103a7c)}
+.wrap.skin-blue .glow{background:#4d8dff}
+.wrap.skin-green .orb,.vorb.skin-green{background:radial-gradient(circle at 32% 25%,#d6ffe0,#80ff9d 25%,#2bd94b 60%,#107c2a)}
+.wrap.skin-green .glow{background:#4dff6d}
+.wrap.skin-purple .orb,.vorb.skin-purple{background:radial-gradient(circle at 32% 25%,#ecd6ff,#b57aff 25%,#7a2bd9 60%,#4a1080)}
+.wrap.skin-purple .glow{background:#a05aff}
+.wrap.skin-rainbow .orb,.vorb.skin-rainbow{background:linear-gradient(145deg,#ff5a5a,#ffc93c 30%,#5aff8a 55%,#5a8aff 75%,#c05aff);animation:hue 3s linear infinite}
+.wrap.skin-rainbow .glow{background:#fff;animation:hue 3s linear infinite}
+.wrap.skin-fire .orb,.vorb.skin-fire{background:radial-gradient(circle at 32% 25%,#fff3c0,#ffb14d 25%,#ff6a1a 60%,#992600)}
+.wrap.skin-fire .glow{background:#ff7a1a}
+.wrap.skin-cosmic .orb,.vorb.skin-cosmic{background:radial-gradient(circle at 32% 25%,#e6d9ff,#a86bff 25%,#6a2bd9 60%,#2a0a5e)}
+.wrap.skin-cosmic .glow{background:#8a4dff}
+.wrap.skin-gold .orb,.vorb.skin-gold{background:radial-gradient(circle at 32% 25%,#fffbe0,#ffe97a 25%,#ffc61a 60%,#b8860b)}
+.wrap.skin-gold .glow{background:#ffe14d}
+.wrap.skin-red .orb,.vorb.skin-red{animation:flicker .8s ease-in-out infinite}
+.wrap.skin-blue .orb,.vorb.skin-blue{animation:floaty 2.4s ease-in-out infinite}
+.wrap.skin-green .orb,.vorb.skin-green{animation:breathe 2.2s ease-in-out infinite}
+.wrap.skin-purple .orb,.vorb.skin-purple{animation:pskin 1.6s ease-in-out infinite}
+.wrap.skin-fire .orb,.vorb.skin-fire{animation:fire 1.1s ease-in-out infinite}
+.wrap.skin-cosmic .orb,.vorb.skin-cosmic{animation:cosmic 2.6s ease-in-out infinite}
+.wrap.skin-gold .orb,.vorb.skin-gold{animation:shine 1.8s ease-in-out infinite}
+@keyframes hue{to{filter:hue-rotate(360deg)}}
+@keyframes flicker{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes pskin{0%,100%{box-shadow:0 0 20px rgba(160,90,255,.4),inset -10px -14px 22px rgba(40,0,80,.4)}50%{box-shadow:0 0 40px rgba(160,90,255,.8),inset -10px -14px 22px rgba(40,0,80,.4)}}
+@keyframes fire{0%,100%{box-shadow:0 0 20px rgba(255,120,26,.5),inset -10px -14px 22px rgba(120,30,0,.4)}50%{box-shadow:0 0 45px rgba(255,120,26,.9),inset -10px -14px 22px rgba(120,30,0,.4)}}
+@keyframes cosmic{0%,100%{box-shadow:0 0 22px rgba(138,77,255,.5)}50%{box-shadow:0 0 50px rgba(138,77,255,.95)}}
+@keyframes shine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+body.no-anim *{animation:none!important;transition:none!important}
+/* НОВЫЕ СКИНЫ */
+.wrap.skin-diamond .orb,.vorb.skin-diamond{background:linear-gradient(135deg,#eaffff,#66e6ff 45%,#2879c9);box-shadow:0 0 28px #62eaff,inset 0 0 18px #fff}
+.wrap.skin-electric .orb,.vorb.skin-electric{background:linear-gradient(135deg,#fff58a,#ffe000 45%,#8b55ff);box-shadow:0 0 32px #ffe000}
+.wrap.skin-ice .orb,.vorb.skin-ice{background:linear-gradient(135deg,#fff,#b9f5ff 45%,#58a9df);box-shadow:0 0 28px #8ceaff}
+.wrap.skin-ghost .orb,.vorb.skin-ghost{background:linear-gradient(135deg,#fff,#c9c9e8 55%,#77779d);opacity:.82;box-shadow:0 0 28px #d9d9ff}
+.wrap.skin-royal .orb,.vorb.skin-royal{background:linear-gradient(135deg,#fff0a8,#c68bff 50%,#5424a8);box-shadow:0 0 30px #bd78ff}
+.wrap.skin-dark .orb,.vorb.skin-dark{background:radial-gradient(circle at 30% 25%,#777,#242033 55%,#05030c);box-shadow:0 0 35px #8b45ff,inset 0 0 18px #9d69ff}
+.wrap.skin-money .orb,.vorb.skin-money{background:linear-gradient(135deg,#eaff9b,#43d879 50%,#087c45);box-shadow:0 0 32px #43ff91}
+.wrap.skin-neon .orb,.vorb.skin-neon{background:linear-gradient(135deg,#f8c8ff,#ff42e6 48%,#6b19c9);box-shadow:0 0 36px #ff42e6}
+.wrap.skin-emerald .orb,.vorb.skin-emerald{background:linear-gradient(135deg,#d5ffe7,#00d58a 48%,#005b43);box-shadow:0 0 34px #00ffa2}
+.wrap.skin-sunset .orb,.vorb.skin-sunset{background:linear-gradient(135deg,#fff0b8,#ff713d 48%,#a31c70);box-shadow:0 0 34px #ff713d}
+.wrap.skin-plasma .orb,.vorb.skin-plasma{background:linear-gradient(135deg,#fff,#a8a0ff 40%,#3430bb 75%,#ff55c8);box-shadow:0 0 40px #8a7cff}
+.wrap.skin-void .orb,.vorb.skin-void{background:radial-gradient(circle at 35% 25%,#8d7ba8,#171020 60%,#030207);box-shadow:0 0 40px #9c54ff}
+.wrap.skin-star .orb,.vorb.skin-star{background:linear-gradient(135deg,#fffbd1,#ffe16a 45%,#fff 60%,#8c75ff);box-shadow:0 0 36px #fff0a0}
+.wrap.skin-secret .orb,.vorb.skin-secret{background:linear-gradient(135deg,#fff,#ffe66d 25%,#ff62df 55%,#5b55ff 80%,#05051a);box-shadow:0 0 42px #ff6de8;animation:hue 2s linear infinite}.wrap.skin-crystal .orb,.vorb.skin-crystal{background:linear-gradient(135deg,#fff,#a7f7ff 35%,#6b8cff 70%,#e5c7ff);box-shadow:0 0 35px #9beaff}.wrap.skin-lava .orb,.vorb.skin-lava{background:linear-gradient(135deg,#fff0a6,#ff8b24 45%,#a91524);box-shadow:0 0 35px #ff5a1f}.wrap.skin-cyber .orb,.vorb.skin-cyber{background:linear-gradient(135deg,#b8fff9,#24e6d0 45%,#172f91);box-shadow:0 0 35px #24e6d0}.wrap.skin-aurora .orb,.vorb.skin-aurora{background:linear-gradient(135deg,#d5ffe7,#54e0bb 40%,#8064e8 75%);box-shadow:0 0 35px #76ffd9}.wrap.skin-candy .orb,.vorb.skin-candy{background:linear-gradient(135deg,#fff0fa,#ff9bd7 45%,#a65cff);box-shadow:0 0 35px #ff9bd7}.wrap.skin-galaxy .orb,.vorb.skin-galaxy{background:linear-gradient(135deg,#d8c6ff,#6e4bcb 45%,#10102f);box-shadow:0 0 38px #8a65ff}
+.wrap.skin-crystal .orb,.vorb.skin-crystal{background:linear-gradient(135deg,#fff,#a7f7ff 35%,#6b8cff 70%,#e5c7ff);box-shadow:0 0 35px #9beaff}.wrap.skin-lava .orb,.vorb.skin-lava{background:linear-gradient(135deg,#fff0a6,#ff8b24 45%,#a91524);box-shadow:0 0 35px #ff5a1f}.wrap.skin-cyber .orb,.vorb.skin-cyber{background:linear-gradient(135deg,#b8fff9,#24e6d0 45%,#172f91);box-shadow:0 0 35px #24e6d0}.wrap.skin-aurora .orb,.vorb.skin-aurora{background:linear-gradient(135deg,#d5ffe7,#54e0bb 40%,#8064e8 75%);box-shadow:0 0 35px #76ffd9}.wrap.skin-candy .orb,.vorb.skin-candy{background:linear-gradient(135deg,#fff0fa,#ff9bd7 45%,#a65cff);box-shadow:0 0 35px #ff9bd7}.wrap.skin-galaxy .orb,.vorb.skin-galaxy{background:linear-gradient(135deg,#d8c6ff,#6e4bcb 45%,#10102f);box-shadow:0 0 38px #8a65ff}
+.wrap.skin-crystal .orb,.vorb.skin-crystal{background:linear-gradient(135deg,#fff,#a7f7ff 35%,#6b8cff 70%,#e5c7ff);box-shadow:0 0 35px #9beaff}.wrap.skin-lava .orb,.vorb.skin-lava{background:linear-gradient(135deg,#fff0a6,#ff8b24 45%,#a91524);box-shadow:0 0 35px #ff5a1f}.wrap.skin-cyber .orb,.vorb.skin-cyber{background:linear-gradient(135deg,#b8fff9,#24e6d0 45%,#172f91);box-shadow:0 0 35px #24e6d0}.wrap.skin-aurora .orb,.vorb.skin-aurora{background:linear-gradient(135deg,#d5ffe7,#54e0bb 40%,#8064e8 75%);box-shadow:0 0 35px #76ffd9}.wrap.skin-candy .orb,.vorb.skin-candy{background:linear-gradient(135deg,#fff0fa,#ff9bd7 45%,#a65cff);box-shadow:0 0 35px #ff9bd7}.wrap.skin-galaxy .orb,.vorb.skin-galaxy{background:linear-gradient(135deg,#d8c6ff,#6e4bcb 45%,#10102f);box-shadow:0 0 38px #8a65ff}
+/* НОВЫЕ СКИНЫ: 18 дополнительных дизайнов */
+.wrap.skin-bronze .orb,.vorb.skin-bronze{background:linear-gradient(135deg,#ffe4b5,#cd873b 48%,#70401e);box-shadow:0 0 28px #d28a45}
+.wrap.skin-ruby .orb,.vorb.skin-ruby{background:linear-gradient(135deg,#ffe0ec,#ff4778 45%,#76052e);box-shadow:0 0 32px #ff4778}
+.wrap.skin-sapphire .orb,.vorb.skin-sapphire{background:linear-gradient(135deg,#e2f4ff,#398cff 48%,#102b83);box-shadow:0 0 32px #398cff}
+.wrap.skin-toxic .orb,.vorb.skin-toxic{background:linear-gradient(135deg,#f1ffad,#a5ef26 48%,#286b18);box-shadow:0 0 34px #a5ef26;animation:breathe 1.5s infinite}
+.wrap.skin-ocean .orb,.vorb.skin-ocean{background:linear-gradient(135deg,#c9ffff,#21c7d9 48%,#07517d);box-shadow:0 0 32px #21c7d9}
+.wrap.skin-cotton .orb,.vorb.skin-cotton{background:linear-gradient(135deg,#fff0fb,#ff9bdc 48%,#9f79ff);box-shadow:0 0 32px #ff9bdc}
+.wrap.skin-chocolate .orb,.vorb.skin-chocolate{background:linear-gradient(135deg,#ffe2b4,#a65b2d 48%,#46200e);box-shadow:0 0 28px #b87543}
+.wrap.skin-magma .orb,.vorb.skin-magma{background:linear-gradient(135deg,#fff5a8,#ff5b21 48%,#690b24);box-shadow:0 0 36px #ff5b21;animation:fire 1.2s infinite}
+.wrap.skin-glitch .orb,.vorb.skin-glitch{background:linear-gradient(135deg,#ff5bea,#2affdf 48%,#3122a8);box-shadow:0 0 36px #2affdf;animation:hue 2s linear infinite}
+.wrap.skin-angel .orb,.vorb.skin-angel{background:linear-gradient(135deg,#fff,#fff5b8 50%,#b9eaff);box-shadow:0 0 38px #fff4b0}
+.wrap.skin-demon .orb,.vorb.skin-demon{background:linear-gradient(135deg,#ffb1b1,#b51e42 48%,#27051e);box-shadow:0 0 38px #ed234f;animation:flicker .9s infinite}
+.wrap.skin-prism .orb,.vorb.skin-prism{background:conic-gradient(from 30deg,#ff6b6b,#ffe66b,#6bff9a,#6bdcff,#a76bff,#ff6bba);box-shadow:0 0 38px #c58aff;animation:hue 4s linear infinite}
+.wrap.skin-pixel .orb,.vorb.skin-pixel{background:linear-gradient(135deg,#c6ff9d 25%,#50c878 25% 50%,#287a53 50% 75%,#174b48 75%);box-shadow:0 0 28px #50c878}
+.wrap.skin-forest .orb,.vorb.skin-forest{background:linear-gradient(135deg,#d7ffc0,#42a85b 48%,#16452c);box-shadow:0 0 34px #42a85b}
+.wrap.skin-storm .orb,.vorb.skin-storm{background:linear-gradient(135deg,#f4f7ff,#929cb9 48%,#303957);box-shadow:0 0 36px #a9c7ff;animation:flicker 2s infinite}
+.wrap.skin-moon .orb,.vorb.skin-moon{background:linear-gradient(135deg,#fff,#c6c9e8 48%,#555b91);box-shadow:0 0 36px #d9dcff}
+.wrap.skin-pink .orb,.vorb.skin-pink{background:linear-gradient(135deg,#ffe0f7,#ff42c8 48%,#7116a0);box-shadow:0 0 38px #ff42c8}
+.wrap.skin-mint .orb,.vorb.skin-mint{background:linear-gradient(135deg,#e3fff5,#65e8bd 48%,#168c83);box-shadow:0 0 34px #65e8bd}
+/* ВСПЛЫВАШКИ */
+.float{position:fixed;z-index:70;color:#ffe36a;font-size:22px;font-weight:900;pointer-events:none;animation:floatup .8s ease-out forwards;text-shadow:0 2px 10px rgba(255,190,20,.6);white-space:nowrap}
+.float.crit{color:#ff9d3c;font-size:26px}
+.float.supercrit{color:#ff4d4d;font-size:30px}
+@keyframes floatup{0%{opacity:0;transform:translateY(0) scale(.7)}20%{opacity:1;transform:translateY(-14px) scale(1.15)}100%{opacity:0;transform:translateY(-80px) scale(1)}}
+/* СПИСОК НАГРАД */
+.reward-btns{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:14px}
+.rbtn{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);color:var(--txt);border-radius:14px;padding:14px;font-family:inherit;font-size:15px;font-weight:bold;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.rbtn span{font-size:20px}
+.rbtn:active{transform:scale(.98)}
+.rbtn{position:relative}.shop-tab{position:relative}
+
+/* СТАТИСТИКА — компактная панель прогресса */
+.stats-hero{display:flex;align-items:center;gap:13px;padding:15px;margin:2px 0 13px;border-radius:17px;background:linear-gradient(120deg,rgba(255,216,75,.17),rgba(139,82,255,.17));border:1px solid rgba(255,255,255,.15)}
+.stats-hero-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:25px;background:linear-gradient(145deg,#ffd84b,#ff9d2e);box-shadow:0 5px 18px rgba(255,183,0,.2)}
+.stats-hero b{display:block;font-size:17px;color:#fff}
+.stats-hero small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat-card{min-width:0;padding:12px;border-radius:15px;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.045));border:1px solid rgba(255,255,255,.12);box-shadow:0 5px 15px rgba(0,0,0,.13)}
+.stat-top{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;min-height:26px}
+.stat-top span{font-size:19px}
+.stat-card strong{display:block;margin-top:8px;color:#fff;font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.stat-card strong .coin-icon{font-size:17px}
+.stat-card strong small{font-size:10px;color:var(--muted);font-weight:normal}
+.stat-gold{border-color:rgba(255,216,75,.25)}.stat-green{border-color:rgba(78,220,150,.25)}.stat-blue{border-color:rgba(90,170,255,.25)}.stat-purple{border-color:rgba(170,115,255,.28)}.stat-orange{border-color:rgba(255,150,70,.25)}.stat-pink{border-color:rgba(255,100,180,.25)}
+.stats-foot{text-align:center;color:var(--muted);font-size:11px;padding:14px 5px 4px}
+@media(max-width:360px){.stats-grid{gap:7px}.stat-card{padding:10px}.stat-card strong{font-size:15px}.stat-top{font-size:10px}}
+
+/* МОДАЛКА */
+#modalBg{display:none;position:fixed;inset:0;background:rgba(10,7,24,.75);z-index:80;align-items:center;justify-content:center;padding:16px}
+#modal{width:100%;max-width:400px;max-height:80vh;display:flex;flex-direction:column;background:linear-gradient(160deg,#2c2158,#1a1338);border:1px solid rgba(255,255,255,.18);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#modalTitle{padding:16px 18px 8px;font-size:19px;font-weight:bold;color:var(--gold)}
+#modalBody{padding:4px 18px 18px;overflow-y:auto}
+.modal-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;margin-bottom:10px}
+.modal-item p{color:var(--muted);font-size:13px;margin:4px 0}
+.modal-item b{color:var(--txt)}
+.modal-item button{margin-top:8px}
+.close-x{position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer}
+#modal{position:relative}
+.progress{height:8px;background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden;margin:6px 0}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#ffd84b,#ff9d00)}
+.soon-badge{display:inline-block;background:linear-gradient(145deg,#ffcf32,#e9960f);color:#3a2500;font-weight:bold;font-size:12px;padding:4px 12px;border-radius:10px;margin-bottom:8px;letter-spacing:1px}
+#toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-8px);background:rgba(30,20,60,.95);border:1px solid rgba(255,216,75,.5);color:var(--gold);padding:10px 18px;border-radius:14px;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:88%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ОФЛАЙН-НАГРАДА И РЕЙТИНГИ */
+.offline-limit{font-size:22px;font-weight:1000;letter-spacing:1px;text-align:center;color:#ffcf32;background:rgba(255,183,0,.13);border:2px solid rgba(255,216,75,.55);border-radius:13px;padding:12px 8px;margin:8px 0 12px;text-shadow:0 0 14px rgba(255,183,0,.35)}
+.lb-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
+.lb-tab{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:var(--muted);border-radius:11px;padding:9px 6px;font-size:12px;font-weight:bold}
+.lb-tab.active{background:linear-gradient(145deg,#ffcf32,#e9960f);color:#3a2500}
+.lb-entry{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;margin:7px 0}
+.lb-rank{font-size:17px;font-weight:900;color:var(--gold);min-width:28px;text-align:center}
+.lb-name{flex:1;min-width:0;font-weight:bold;font-size:13px;overflow-wrap:anywhere}
+.lb-score{color:var(--gold);font-weight:bold;font-size:12px;text-align:right}
+.lb-note{font-size:12px;color:var(--muted);line-height:1.45}
+
+/* НАСТРОЙКИ */
+.set-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;margin-top:10px;width:100%;max-width:360px}
+.set-item b{display:block;margin-bottom:6px}
+.set-item p{color:var(--muted);font-size:12px;margin:4px 0 10px}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+input[type=range]{width:100%;accent-color:#ffb700;margin-top:6px}
+.danger{background:linear-gradient(145deg,#ff5a5a,#c02222)!important;color:#fff!important}
+.pet-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;margin:12px 0}.pet-tab{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:var(--muted);border-radius:11px;padding:9px 3px;font-size:11px;font-weight:bold}.pet-tab.active{background:linear-gradient(145deg,#ffcf32,#e9960f);color:#3a2500}.pet-art{height:76px;border-radius:14px;background:radial-gradient(circle,rgba(159,112,255,.3),rgba(255,255,255,.03));display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:8px}.pet-card{background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.14);border-radius:15px;padding:10px;text-align:center;min-width:0}.pet-card small{color:var(--muted);display:block;margin:4px 0}.rarity-common{color:#c8c8d8}.rarity-rare{color:#65c8ff}.rarity-epic{color:#c18aff}.rarity-legendary{color:#ffd45a}.rarity-mythic{color:#ff83db}.pet-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:7px}.pet-actions button{font-size:11px;padding:7px 9px}.wheel{width:230px;height:230px;border-radius:50%;margin:12px auto;background:conic-gradient(#ffcf32 0 45deg,#8959e8 45deg 90deg,#4fc8a8 90deg 135deg,#e85d76 135deg 180deg,#5d9ce8 180deg 225deg,#ff9f43 225deg 270deg,#b77be8 270deg 315deg,#65bd55 315deg 360deg);border:8px solid #f8d76a;box-shadow:0 0 25px #ffcb3d66;display:grid;place-items:center;position:relative;transition:transform 4s cubic-bezier(.12,.72,.12,1)}.wheel:after{content:'VERITY';background:#2b2054;color:#ffe36b;border:4px solid #fff0a0;border-radius:50%;width:76px;height:76px;display:grid;place-items:center;font-weight:1000;font-size:13px}.wheel-pointer{font-size:28px;text-align:center;color:#ffe36b;margin-bottom:-15px;position:relative;z-index:2}.title-pill{display:inline-block;border:1px solid #ffd84b88;background:#ffd84b18;color:#ffdf6b;padding:4px 9px;border-radius:20px;font-size:11px;font-weight:bold}.day-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.day-card{border:1px solid rgba(255,255,255,.14);border-radius:13px;padding:9px;background:rgba(255,255,255,.05);text-align:center}.day-art{width:58px;height:58px;margin:0 auto 6px;border-radius:13px;background:linear-gradient(145deg,#4b397d,#241943);display:grid;place-items:center;font-size:30px}.day-card.done{border-color:#56d69a}.day-card.next{border-color:#ffd84b;box-shadow:0 0 12px #ffd84b33}.footer{color:#625b7c;font-size:10px;margin-top:auto;padding-top:14px}
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<div id="toast"></div>
+
+<div id="app">
+  <div class="screen active" id="screen-main">
+    <div class="gtitle">VERITY CLICKER</div>
+    <div class="balbox">
+      <div class="bal-lbl">БАЛАНС</div>
+      <div class="bal"><span id="money">0</span> <span class="coin-icon" aria-label="монеты"></span></div>
+      <div class="chips">
+        <div class="chip">За клик: <b id="perClick">+1</b></div>
+        <div class="chip">Доход: <b id="perSec">0 / сек</b></div>
+      </div>
+    </div>
+    <div id="comboBox"><span id="comboCount">0</span> комбо <span id="comboMult">x1</span></div>
+    <div class="wrap" id="orbWrap">
+      <div class="glow"></div>
+      <div class="orb" id="orb">
+        <div class="eyes"><i></i><i></i></div>
+        <div class="mouth"></div>
+      </div>
+    </div>
+    <div class="hint">Нажимай на Верити!</div>
+    <div class="lvlbadge">Уровень <span id="lvl">1</span></div>
+    <div class="xpline">
+      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+      <div class="xptext" id="xpText">0 / 60</div>
+    </div>
+    <div class="adrow">
+      <button class="adbtn watch" onclick="showAdStub('watch')">📺 Доход x2 за рекламу</button>
+      <button class="adbtn free" onclick="showAdStub('free')">🎁 Бесплатная награда</button>
+    </div>
+    <button id="dailyHomeBtn" class="rbtn" style="width:calc(100% - 44px);margin:16px 22px 4px;position:relative" onclick="openModal('daily')"><span>🎁</span> Календарь наград · Забрать награду <b id="dailyHomeBadge" style="display:none;position:absolute;right:12px;top:8px;background:#ff405f;color:white;border-radius:20px;padding:2px 8px;font-size:12px">!</b></button>
+    <button id="returnHomeBtn" class="rbtn" style="width:calc(100% - 44px);margin:8px 22px 4px;display:none;background:linear-gradient(100deg,#ffb52e,#ff6a42)" onclick="openModal('returngift')"><span>🎉</span> ПОДАРОК ЗА ВОЗВРАЩЕНИЕ — ЗАБРАТЬ!</button>
+    <div class="footer">VERITY CLICKER • UPDATE 2.4</div>
+  </div>
+
+  <div class="screen" id="screen-shop">
+    <div class="gtitle">МАГАЗИН</div>
+    <div class="shop-tabs">
+      <button class="shop-tab active" data-cat="click" onclick="switchShop('click')">👆 Клик</button>
+      <button class="shop-tab" data-cat="auto" onclick="switchShop('auto')">⚙️ Автодоход</button>
+      <button class="shop-tab" data-cat="spec" onclick="switchShop('spec')">✨ Особые</button>
+    </div>
+    <div class="grid" id="shopGrid"></div>
+  </div>
+
+  <div class="screen" id="screen-pets">
+    <div class="gtitle">🐾 ПИТОМЦЫ</div>
+    <div class="chips"><div class="chip">Собрано: <b id="petCount">0/30</b></div><div class="chip">Слоты: <b id="petSlots">3</b></div></div>
+    <div class="pet-tabs"><button class="pet-tab active" onclick="showPetTab('eggs')">🥚 Яйца</button><button class="pet-tab" onclick="showPetTab('inventory')">🎒 Инвентарь</button><button class="pet-tab" onclick="showPetTab('luck')">🍀 Удача</button><button class="pet-tab" onclick="showPetTab('collection')">📖 Коллекция</button></div>
+    <div class="grid" id="petGrid"></div>
+  </div>
+
+  <div class="screen" id="screen-skins">
+    <div class="gtitle">СКИНЫ</div>
+    <p style="color:#a9a2c5;font-size:13px;margin:4px 0">Нажми на скин, чтобы купить или надеть</p>
+    <div class="grid" id="skinGrid"></div>
+  </div>
+
+  <div class="screen" id="screen-rewards">
+    <div class="gtitle">НАГРАДЫ</div>
+    <div class="reward-btns">
+      <button class="rbtn" onclick="openModal('quests')"><span>📋</span> Квесты</button>
+      <button class="rbtn" onclick="openModal('achievements')"><span>🏆</span> Достижения</button>
+      <button class="rbtn" onclick="openModal('daily')"><span>🎁</span> Ежедневная награда</button>
+      <button class="rbtn" onclick="openModal('prestige')"><span>♻️</span> Престиж</button>
+      <button class="rbtn" onclick="openModal('levelrewards')"><span>⭐</span> Награды уровней</button>
+      <button class="rbtn" onclick="openModal('stats')"><span>📊</span> Статистика</button>
+      <button class="rbtn" onclick="openModal('leaderboards')"><span>🌍</span> Таблица лидеров</button><button class="rbtn" onclick="openModal('wheel')"><span>🎡</span> Колесо фортуны</button><button class="rbtn" onclick="openModal('titles')"><span>👑</span> Титулы</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-settings">
+    <div class="gtitle">НАСТРОЙКИ</div>
+    <div class="set-item">
+      <div class="set-row"><b>🔊 Звуки</b><button class="buy" id="btnSound" onclick="toggleSound()">Вкл</button></div>
+      <input type="range" id="volRange" min="0" max="100" value="70" oninput="setVol(this.value)">
+    </div>
+    <div class="set-item">
+      <div class="set-row"><b>🎵 Фоновая музыка</b><button class="buy" id="btnMusic" onclick="toggleMusic()">Вкл</button></div>
+      <input type="range" id="mvolRange" min="0" max="100" value="40" oninput="setMVol(this.value)">
+    </div>
+    <div class="set-item">
+      <div class="set-row"><b>✨ Анимации</b><button class="buy" id="btnAnim" onclick="toggleAnim()">Вкл</button></div>
+    </div>
+    <div class="set-item">
+      <b>💾 Сохранение</b>
+      <p>Прогресс сохраняется автоматически каждые 5 секунд.</p>
+      <button class="buy" onclick="save();toast('Игра сохранена!')">Сохранить сейчас</button>
+    </div>
+    <div class="set-item">
+      <b>⚠️ Сброс прогресса</b>
+      <p>Весь прогресс будет безвозвратно удалён.</p>
+      <button class="buy danger" onclick="resetSave()">Сбросить всё</button>
+    </div>
+  </div>
+
+  <div id="adPreview"><div><b>МЕСТО ДЛЯ РЕКЛАМЫ</b><small>Sticky-баннер Яндекс Игр • предварительный макет</small></div></div>
+  <nav id="nav">
+    <button data-screen="main" class="active" onclick="showScreen('main')"><span class="ic">🟡</span>Игра</button>
+    <button data-screen="shop" onclick="showScreen('shop')"><span class="ic">🛒</span>Магазин</button>
+    <button data-screen="skins" onclick="showScreen('skins')"><span class="ic">🎨</span>Скины</button><button data-screen="pets" onclick="showScreen('pets')"><span class="ic">🐾</span>Питомцы</button>
+    <button data-screen="rewards" onclick="showScreen('rewards')"><span class="ic">🏆</span>Награды</button>
+    <button data-screen="settings" onclick="showScreen('settings')"><span class="ic">⚙️</span>Ещё</button>
+  </nav>
+</div>
+
+<div id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div id="modal">
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <div id="modalTitle"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= СОСТОЯНИЕ ================= */
+var SAVE_KEY='verityClicker_v3';
+function defaultState(){return{
+  money:0,totalEarned:0,runEarned:0,maxMoney:0,totalClicks:0,buys:0,maxCombo:0,eventEarned:0,
+  xp:0,level:1,upgrades:{},quests:null,
+  skinsOwned:['normal'],skin:'normal',achievements:[],
+  prestige:0,prestigePoints:0,prestigeNoticeShown:false,
+  playTime:0,
+  lastSeen:Date.now(),offlinePending:null,
+  settings:{sound:true,volume:0.7,music:true,musicVolume:0.4,musicDefaultApplied:true,anim:true},
+  lastSave:Date.now(),nextEvent:Date.now()+90000,
+  pets:{inventory:[],equipped:[],luckLevel:0,slotsLevel:0},
+  wheel:{freeAt:0,adDate:'',adCount:0},
+  titles:{owned:['Новичок'],equipped:'Новичок'},
+  questDate:'',
+  periodStats:{day:{key:'',clicks:0,coins:0,time:0,prestiges:0},week:{key:'',clicks:0,coins:0,time:0,prestiges:0},month:{key:'',clicks:0,coins:0,time:0,prestiges:0}},
+  daily:{last:0,streak:0,claimedDays:[],cycleComplete:false},
+};}
+function load(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return defaultState();
+    var data=JSON.parse(raw);
+    var d=defaultState();
+    var s=Object.assign({},d,data);
+    s.settings=Object.assign({},d.settings,data.settings||{});
+    if(!data.settings||data.settings.musicDefaultApplied!==true){s.settings.music=true;s.settings.musicDefaultApplied=true;}
+    s.daily=Object.assign({},d.daily,data.daily||{});
+    s.pets=Object.assign({},d.pets,data.pets||{});s.pets.inventory=Array.isArray(s.pets.inventory)?s.pets.inventory:[];s.pets.equipped=Array.isArray(s.pets.equipped)?s.pets.equipped:[];
+    s.wheel=Object.assign({},d.wheel,data.wheel||{});s.titles=Object.assign({},d.titles,data.titles||{});s.titles.owned=Array.isArray(s.titles.owned)?s.titles.owned:['Новичок'];
+    s.periodStats=Object.assign({},d.periodStats,data.periodStats||{});['day','week','month'].forEach(function(k){s.periodStats[k]=Object.assign({},d.periodStats[k],(data.periodStats||{})[k]||{});});
+    if(!Array.isArray(s.daily.claimedDays))s.daily.claimedDays=[];
+    if(typeof s.lastSeen!=='number')s.lastSeen=Number(data.lastSave)||Date.now();
+    if(!s.offlinePending||typeof s.offlinePending.amount!=='number')s.offlinePending=null;
+    if(typeof data.runEarned!=='number')s.runEarned=Math.max(0,Number(data.money)||0);
+    if(typeof s.prestigeNoticeShown!=='boolean')s.prestigeNoticeShown=false;
+    s.upgrades=data.upgrades||{};
+    if(!s.skinsOwned||!s.skinsOwned.length)s.skinsOwned=['normal'];
+    return s;
+  }catch(e){return defaultState();}
+}
+var S=load();
+function save(){S.lastSave=Date.now();S.lastSeen=S.lastSave;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+
+/* ================= УЛУЧШЕНИЯ ================= */
+var UPGRADES=[
+ {id:'click1',cat:'click',name:'Усиление клика',desc:'+1 монета за клик за уровень',base:50,growth:1.55},
+ {id:'click2',cat:'click',name:'Мощный клик',desc:'+5 монет за клик за уровень',base:400,growth:1.6},
+ {id:'click3',cat:'click',name:'Суперклик',desc:'+25 монет за клик за уровень',base:2500,growth:1.6},
+ {id:'click4',cat:'click',name:'Мегаудар',desc:'+120 монет за клик за уровень',base:15000,growth:1.65},
+ {id:'click5',cat:'click',name:'Золотой клик',desc:'+700 монет за клик за уровень',base:100000,growth:1.7},
+ {id:'click6',cat:'click',name:'Квантовый удар',desc:'+3 500 монет за клик за уровень',base:650000,growth:1.72},
+ {id:'click7',cat:'click',name:'Молниеносный палец',desc:'+18 000 монет за клик за уровень',base:4000000,growth:1.75},
+ {id:'click8',cat:'click',name:'Разрушитель реальности',desc:'+90 000 монет за клик за уровень',base:25000000,growth:1.78},
+ {id:'click9',cat:'click',name:'Ядро Верити',desc:'+450 000 монет за клик за уровень',base:160000000,growth:1.8},
+ {id:'click10',cat:'click',name:'Абсолютный клик',desc:'+2 500 000 монет за клик за уровень',base:1000000000,growth:1.83},
+ {id:'click11',cat:'click',name:'Сингулярный удар',desc:'+12 000 000 монет за клик за уровень',base:6500000000,growth:1.85},
+ {id:'click12',cat:'click',name:'Звёздный разрушитель',desc:'+60 000 000 монет за клик за уровень',base:42000000000,growth:1.87},
+ {id:'click13',cat:'click',name:'Импульс бесконечности',desc:'+300 000 000 монет за клик за уровень',base:280000000000,growth:1.89},
+ {id:'click14',cat:'click',name:'Божественный палец',desc:'+1 500 000 000 монет за клик за уровень',base:1900000000000,growth:1.91},
+ {id:'click15',cat:'click',name:'Абсолютная реальность',desc:'+8 000 000 000 монет за клик за уровень',base:13000000000000,growth:1.93},
+ {id:'auto1',cat:'auto',name:'Автокликер',desc:'+1 монета в секунду',base:200,growth:1.6},
+ {id:'auto2',cat:'auto',name:'Улучшенный автокликер',desc:'+6 монет в секунду',base:1800,growth:1.65},
+ {id:'auto3',cat:'auto',name:'Робот',desc:'+35 монет в секунду',base:12000,growth:1.65},
+ {id:'auto4',cat:'auto',name:'Фабрика монет',desc:'+220 монет в секунду',base:80000,growth:1.7},
+ {id:'auto5',cat:'auto',name:'Золотая фабрика',desc:'+1300 монет в секунду',base:500000,growth:1.75},
+ {id:'auto6',cat:'auto',name:'Квантовая ферма',desc:'+6 500 монет в секунду',base:3000000,growth:1.72},
+ {id:'auto7',cat:'auto',name:'Монетный реактор',desc:'+32 000 монет в секунду',base:18000000,growth:1.75},
+ {id:'auto8',cat:'auto',name:'Космический завод',desc:'+160 000 монет в секунду',base:110000000,growth:1.78},
+ {id:'auto9',cat:'auto',name:'Измерение богатства',desc:'+800 000 монет в секунду',base:700000000,growth:1.8},
+ {id:'auto10',cat:'auto',name:'Верити-мегаполис',desc:'+4 000 000 монет в секунду',base:4500000000,growth:1.83},
+ {id:'auto11',cat:'auto',name:'Галактическая сеть',desc:'+20 000 000 монет в секунду',base:30000000000,growth:1.85},
+ {id:'auto12',cat:'auto',name:'Мультивселенная',desc:'+100 000 000 монет в секунду',base:200000000000,growth:1.87},
+ {id:'auto13',cat:'auto',name:'Вечный генератор',desc:'+500 000 000 монет в секунду',base:1400000000000,growth:1.89},
+ {id:'auto14',cat:'auto',name:'Ядро галактики',desc:'+2 500 000 000 монет в секунду',base:9500000000000,growth:1.91},
+ {id:'auto15',cat:'auto',name:'Создатель вселенных',desc:'+12 000 000 000 монет в секунду',base:65000000000000,growth:1.93},
+  {id:'click16',cat:'click',name:'Титановый клик',desc:'+40 000 000 000 монет за клик за уровень',base:1e+15,growth:1.85},
+ {id:'click17',cat:'click',name:'Нейтронный удар',desc:'+180 000 000 000 монет за клик за уровень',base:8e+15,growth:1.85},
+ {id:'click18',cat:'click',name:'Солнечный импульс',desc:'+800 000 000 000 монет за клик за уровень',base:6.4e+16,growth:1.85},
+ {id:'click19',cat:'click',name:'Пульсарный палец',desc:'+3 500 000 000 000 монет за клик за уровень',base:5.12e+17,growth:1.85},
+ {id:'click20',cat:'click',name:'Квантовый кулак',desc:'+15 000 000 000 000 монет за клик за уровень',base:4.096e+18,growth:1.85},
+ {id:'click21',cat:'click',name:'Гиперпространство',desc:'+70 000 000 000 000 монет за клик за уровень',base:3.277e+19,growth:1.85},
+ {id:'click22',cat:'click',name:'Разлом измерений',desc:'+300 000 000 000 000 монет за клик за уровень',base:2.621e+20,growth:1.85},
+ {id:'click23',cat:'click',name:'Звёздное ядро',desc:'+1 300 000 000 000 000 монет за клик за уровень',base:2.097e+21,growth:1.85},
+ {id:'click24',cat:'click',name:'Сверхновая',desc:'+6 000 000 000 000 000 монет за клик за уровень',base:1.678e+22,growth:1.85},
+ {id:'click25',cat:'click',name:'Космический бог',desc:'+25 000 000 000 000 000 монет за клик за уровень',base:1.342e+23,growth:1.85},
+ {id:'click26',cat:'click',name:'Тёмный импульс',desc:'+120 000 000 000 000 000 монет за клик за уровень',base:1.074e+24,growth:1.85},
+ {id:'click27',cat:'click',name:'Гравитационный клик',desc:'+500 000 000 000 000 000 монет за клик за уровень',base:8.59e+24,growth:1.85},
+ {id:'click28',cat:'click',name:'Вечная сингулярность',desc:'+2 000 000 000 000 000 000 монет за клик за уровень',base:6.87e+25,growth:1.85},
+ {id:'click29',cat:'click',name:'Создатель звёзд',desc:'+9 000 000 000 000 000 000 монет за клик за уровень',base:5.5e+26,growth:1.85},
+ {id:'click30',cat:'click',name:'Разрушитель миров',desc:'+40 000 000 000 000 000 000 монет за клик за уровень',base:4.4e+27,growth:1.85},
+ {id:'click31',cat:'click',name:'Абсолютная энергия',desc:'+170 000 000 000 000 000 000 монет за клик за уровень',base:3.5e+28,growth:1.85},
+ {id:'click32',cat:'click',name:'Архитектор реальности',desc:'+800 000 000 000 000 000 000 монет за клик за уровень',base:2.8e+29,growth:1.85},
+ {id:'click33',cat:'click',name:'Бесконечный Верити',desc:'+3 500 000 000 000 000 000 000 монет за клик за уровень',base:2.25e+30,growth:1.85},
+ {id:'click34',cat:'click',name:'Трон вселенной',desc:'+15 000 000 000 000 000 000 000 монет за клик за уровень',base:1.8e+31,growth:1.85},
+ {id:'click35',cat:'click',name:'Клик за гранью',desc:'+70 000 000 000 000 004 194 304 монет за клик за уровень',base:1.44e+32,growth:1.85},
+ {id:'auto16',cat:'auto',name:'Титановый завод',desc:'+40 000 000 000 монет в секунду за уровень',base:1e+15,growth:1.85},
+ {id:'auto17',cat:'auto',name:'Нейтронный реактор',desc:'+180 000 000 000 монет в секунду за уровень',base:8e+15,growth:1.85},
+ {id:'auto18',cat:'auto',name:'Солнечная станция',desc:'+800 000 000 000 монет в секунду за уровень',base:6.4e+16,growth:1.85},
+ {id:'auto19',cat:'auto',name:'Пульсарный генератор',desc:'+3 500 000 000 000 монет в секунду за уровень',base:5.12e+17,growth:1.85},
+ {id:'auto20',cat:'auto',name:'Квантовая фабрика',desc:'+15 000 000 000 000 монет в секунду за уровень',base:4.096e+18,growth:1.85},
+ {id:'auto21',cat:'auto',name:'Гипердвигатель',desc:'+70 000 000 000 000 монет в секунду за уровень',base:3.277e+19,growth:1.85},
+ {id:'auto22',cat:'auto',name:'Разлом измерений',desc:'+300 000 000 000 000 монет в секунду за уровень',base:2.621e+20,growth:1.85},
+ {id:'auto23',cat:'auto',name:'Звёздная электростанция',desc:'+1 300 000 000 000 000 монет в секунду за уровень',base:2.097e+21,growth:1.85},
+ {id:'auto24',cat:'auto',name:'Сверхновая сеть',desc:'+6 000 000 000 000 000 монет в секунду за уровень',base:1.678e+22,growth:1.85},
+ {id:'auto25',cat:'auto',name:'Космический мегазавод',desc:'+25 000 000 000 000 000 монет в секунду за уровень',base:1.342e+23,growth:1.85},
+ {id:'auto26',cat:'auto',name:'Тёмный генератор',desc:'+120 000 000 000 000 000 монет в секунду за уровень',base:1.074e+24,growth:1.85},
+ {id:'auto27',cat:'auto',name:'Гравитационная станция',desc:'+500 000 000 000 000 000 монет в секунду за уровень',base:8.59e+24,growth:1.85},
+ {id:'auto28',cat:'auto',name:'Вечный двигатель',desc:'+2 000 000 000 000 000 000 монет в секунду за уровень',base:6.87e+25,growth:1.85},
+ {id:'auto29',cat:'auto',name:'Создатель галактик',desc:'+9 000 000 000 000 000 000 монет в секунду за уровень',base:5.5e+26,growth:1.85},
+ {id:'auto30',cat:'auto',name:'Машина миров',desc:'+40 000 000 000 000 000 000 монет в секунду за уровень',base:4.4e+27,growth:1.85},
+ {id:'auto31',cat:'auto',name:'Абсолютный реактор',desc:'+170 000 000 000 000 000 000 монет в секунду за уровень',base:3.5e+28,growth:1.85},
+ {id:'auto32',cat:'auto',name:'Архитектор вселенных',desc:'+800 000 000 000 000 000 000 монет в секунду за уровень',base:2.8e+29,growth:1.85},
+ {id:'auto33',cat:'auto',name:'Бесконечная фабрика',desc:'+3 500 000 000 000 000 000 000 монет в секунду за уровень',base:2.25e+30,growth:1.85},
+ {id:'auto34',cat:'auto',name:'Трон энергии',desc:'+15 000 000 000 000 000 000 000 монет в секунду за уровень',base:1.8e+31,growth:1.85},
+ {id:'auto35',cat:'auto',name:'Источник бесконечности',desc:'+70 000 000 000 000 004 194 304 монет в секунду за уровень',base:1.44e+32,growth:1.85},
+ {id:'crit',cat:'spec',name:'Шанс крита',desc:'+2% к шансу крита за уровень (макс. 10)',base:600,growth:2.1,max:10},
+ {id:'mult',cat:'spec',name:'Множитель',desc:'+10% к силе клика за уровень',base:3500,growth:2.3},
+ {id:'xpboost',cat:'spec',name:'Бонус к опыту',desc:'+20% к получаемому опыту за уровень',base:900,growth:2.2},
+ {id:'incboost',cat:'spec',name:'Увеличение дохода',desc:'+15% к авто-доходу за уровень',base:3000,growth:2.4},
+ {id:'critpower',cat:'spec',name:'Критический урон',desc:'+2x к множителю критического удара за уровень',base:12000,growth:2.5,max:5},
+ {id:'combo',cat:'spec',name:'Мастер комбо',desc:'+0.1x к множителю комбо за уровень (макс. 10)',base:25000,growth:2.35,max:10},
+ {id:'luck',cat:'spec',name:'Удачливый Верити',desc:'+1% к шансу редкого супер-крита за уровень (макс. 10)',base:50000,growth:2.45,max:10},
+ {id:'petluck',cat:'spec',name:'Лапа удачи',desc:'+3% к удаче при открытии яиц за уровень (макс. 10)',base:75000,growth:2.35,max:10},
+ {id:'globalboost',cat:'spec',name:'Золотой резонанс',desc:'+5% ко всему доходу за уровень',base:150000,growth:2.5},
+ {id:'offlineboost',cat:'spec',name:'Эхо офлайна',desc:'+10% к офлайн-награде за уровень',base:250000,growth:2.55},
+ {id:'prestigepower',cat:'spec',name:'Импульс перерождения',desc:'+2% к бонусу каждого очка престижа за уровень',base:500000,growth:2.6}
+];
+function upLvl(id){return S.upgrades[id]||0;}
+function upCost(u){return Math.floor(u.base*Math.pow(u.growth,upLvl(u.id)));}
+var SKINS=[
+ {id:'normal',name:'Обычный жёлтый',price:0,bonus:0,unlock:null},
+ {id:'red',name:'Красный',price:500,bonus:0.02,unlock:null},
+ {id:'blue',name:'Синий',price:1500,bonus:0.04,unlock:null},
+ {id:'green',name:'Зелёный',price:4000,bonus:0.06,unlock:null},
+ {id:'purple',name:'Фиолетовый',price:10000,bonus:0.08,unlock:null},
+ {id:'rainbow',name:'Радужный',price:0,bonus:0.15,unlock:{type:'level',value:20}},
+ {id:'fire',name:'Огненный',price:50000,bonus:0.2,unlock:null},
+ {id:'cosmic',name:'Космический',price:0,bonus:0.25,unlock:{type:'ach',value:'million'}},
+ {id:'gold',name:'Золотой',price:250000,bonus:0.3,unlock:null},
+ {id:'diamond',name:'Алмазный',price:0,bonus:0.35,unlock:{type:'level',value:10}},
+ {id:'electric',name:'Электрический',price:0,bonus:0.4,unlock:{type:'level',value:15}},
+ {id:'ice',name:'Ледяной',price:0,bonus:0.45,unlock:{type:'level',value:25}},
+ {id:'ghost',name:'Призрачный',price:0,bonus:0.5,unlock:{type:'level',value:30}},
+ {id:'royal',name:'Королевский',price:0,bonus:0.6,unlock:{type:'level',value:40}},
+ {id:'dark',name:'Тёмная материя',price:0,bonus:0.75,unlock:{type:'level',value:50}},
+ {id:'money',name:'Денежный',price:0,bonus:1,unlock:{type:'level',value:60}},
+ {id:'neon',name:'Неоновый',price:0,bonus:1.2,unlock:{type:'level',value:70}},
+ {id:'emerald',name:'Изумрудный',price:0,bonus:1.4,unlock:{type:'level',value:80}},
+ {id:'sunset',name:'Закат',price:0,bonus:1.6,unlock:{type:'level',value:100}},
+ {id:'plasma',name:'Плазменный',price:0,bonus:1.8,unlock:{type:'level',value:120}},
+ {id:'void',name:'Пустота',price:0,bonus:2,unlock:{type:'level',value:150}},
+ {id:'star',name:'Звёздный',price:0,bonus:2.5,unlock:{type:'level',value:200}},
+ {id:'crystal',name:'Кристальный',price:0,bonus:2.7,unlock:{type:'level',value:220}},
+ {id:'lava',name:'Лавовый',price:0,bonus:2.9,unlock:{type:'level',value:240}},
+ {id:'cyber',name:'Кибер-Verity',price:0,bonus:3.1,unlock:{type:'level',value:260}},
+ {id:'aurora',name:'Северное сияние',price:0,bonus:3.3,unlock:{type:'level',value:280}},
+ {id:'candy',name:'Карамельный',price:0,bonus:3.5,unlock:{type:'level',value:300}},
+ {id:'galaxy',name:'Галактический',price:0,bonus:4,unlock:{type:'level',value:350}},
+ {id:'bronze',name:'Бронзовый',price:25000,bonus:0.1,unlock:null},
+ {id:'ruby',name:'Рубиновый',price:120000,bonus:0.16,unlock:null},
+ {id:'sapphire',name:'Сапфировый',price:450000,bonus:0.22,unlock:null},
+ {id:'toxic',name:'Токсичный',price:1800000,bonus:0.3,unlock:null},
+ {id:'ocean',name:'Океанический',price:7500000,bonus:0.38,unlock:null},
+ {id:'cotton',name:'Сахарная вата',price:30000000,bonus:0.46,unlock:null},
+ {id:'chocolate',name:'Шоколадный',price:150000000,bonus:0.55,unlock:null},
+ {id:'magma',name:'Магматический',price:800000000,bonus:0.65,unlock:null},
+ {id:'glitch',name:'Глитч',price:5000000000,bonus:0.8,unlock:null},
+ {id:'angel',name:'Ангельский',price:0,bonus:0.9,unlock:{type:'level',value:90}},
+ {id:'demon',name:'Демонический',price:0,bonus:1.1,unlock:{type:'level',value:110}},
+ {id:'prism',name:'Призматический',price:0,bonus:1.3,unlock:{type:'level',value:130}},
+ {id:'pixel',name:'Пиксельный',price:25000000000,bonus:1.0,unlock:null},
+ {id:'forest',name:'Лесной',price:0,bonus:1.5,unlock:{type:'level',value:170}},
+ {id:'storm',name:'Грозовой',price:0,bonus:1.7,unlock:{type:'level',value:190}},
+ {id:'moon',name:'Лунный',price:0,bonus:1.9,unlock:{type:'level',value:230}},
+ {id:'pink',name:'Розовый неон',price:150000000000,bonus:1.4,unlock:null},
+ {id:'mint',name:'Мятный',price:900000000000,bonus:1.8,unlock:null},
+ {id:'secret',name:'Секретный ???',price:0,bonus:5,unlock:{type:'secret'}}
+];
+function skinBonus(){var sk=SKINS.find(function(x){return x.id===S.skin;});return sk?1+(sk.bonus||0):1;}
+function unlockText(sk){return sk.unlock.type==='level'?'Нужен '+sk.unlock.value+' уровень':sk.unlock.type==='secret'?'Секретная награда колеса':'Достижение «Первый миллион»';}
+
+var ACHIEVEMENTS=[
+ {id:'first',name:'Первый клик',desc:'Сделай первый клик',check:function(){return S.totalClicks>=1;},reward:{money:10,xp:5}},
+ {id:'c100',name:'Сотка',desc:'Сделай 100 кликов',check:function(){return S.totalClicks>=100;},reward:{money:100,xp:20}},
+ {id:'c1000',name:'Тысяча кликов',desc:'Сделай 1 000 кликов',check:function(){return S.totalClicks>=1000;},reward:{money:1000,xp:80}},
+ {id:'c10000',name:'Машина кликов',desc:'Сделай 10 000 кликов',check:function(){return S.totalClicks>=10000;},reward:{money:10000,xp:300}},
+ {id:'buy1',name:'Первая покупка',desc:'Купи первое улучшение',check:function(){return S.buys>=1;},reward:{money:50,xp:15}},
+ {id:'million',name:'Первый миллион',desc:'Заработай 1 000 000 монет',check:function(){return S.totalEarned>=1000000;},reward:{money:100000,xp:1000}},
+ {id:'lvl25',name:'Ветеран',desc:'Достигни 25 уровня',check:function(){return S.level>=25;},reward:{money:50000,xp:0}},
+ {id:'combo20',name:'Комбо-мастер',desc:'Набери комбо 20',check:function(){return S.maxCombo>=20;},reward:{money:2000,xp:100}},
+ {id:'prestige1',name:'Перерождение',desc:'Сделай первый престиж',check:function(){return S.prestige>=1;},reward:{money:10000,xp:500}}
+ ];
+// Дополнительные достижения финального обновления — 55 новых целей.
+(function(){
+  var defs=[
+    ['c50','Разминка','Сделай 50 кликов',()=>S.totalClicks>=50,500],['c500','Пальцы огня','Сделай 500 кликов',()=>S.totalClicks>=500,2500],['c5000','Клик-машина','Сделай 5 000 кликов',()=>S.totalClicks>=5000,12000],['c50000','Не остановить','Сделай 50 000 кликов',()=>S.totalClicks>=50000,80000],['c100k','Легенда кликов','Сделай 100 000 кликов',()=>S.totalClicks>=100000,200000],
+    ['earn10k','Копилка','Заработай 10 000 монет',()=>S.totalEarned>=10000,3000],['earn100k','Богач','Заработай 100 000 монет',()=>S.totalEarned>=100000,15000],['earn10m','Мультимиллионер','Заработай 10 млн монет',()=>S.totalEarned>=1e7,150000],['earn100m','Сотня миллионов','Заработай 100 млн монет',()=>S.totalEarned>=1e8,1e6],['earn1b','Миллиардер','Заработай 1 млрд монет',()=>S.totalEarned>=1e9,1e7],
+    ['lvl5','Новичок уровней','Достигни 5 уровня',()=>S.level>=5,1000],['lvl10','Опытный','Достигни 10 уровня',()=>S.level>=10,5000],['lvl50','Профи','Достигни 50 уровня',()=>S.level>=50,100000],['lvl100','Мастер','Достигни 100 уровня',()=>S.level>=100,1e6],['lvl200','Вершина опыта','Достигни 200 уровня',()=>S.level>=200,1e7],
+    ['buy10','Покупатель','Купи 10 улучшений',()=>S.buys>=10,5000],['buy50','Постоянный клиент','Купи 50 улучшений',()=>S.buys>=50,50000],['buy100','Магнат магазина','Купи 100 улучшений',()=>S.buys>=100,250000],
+    ['prestige3','Тройное перерождение','Сделай 3 престижа',()=>S.prestige>=3,50000],['prestige5','Путь возрождения','Сделай 5 престижей',()=>S.prestige>=5,150000],['prestige10','Десятикратный','Сделай 10 престижей',()=>S.prestige>=10,1e6],
+    ['combo5','Ритм','Набери комбо 5',()=>S.maxCombo>=5,1000],['combo50','Без пауз','Набери комбо 50',()=>S.maxCombo>=50,25000],['combo100','Комбо-бог','Набери комбо 100',()=>S.maxCombo>=100,100000],
+    ['play1h','Час пролетел','Проведи в игре 1 час',()=>S.playTime>=3600,25000],['play5h','Постоянный игрок','Проведи в игре 5 часов',()=>S.playTime>=18000,100000],['play24h','Сутки в Verity','Проведи в игре 24 часа',()=>S.playTime>=86400,1e6],
+    ['skin3','Коллекционер стилей','Открой 3 скина',()=>S.skinsOwned.length>=3,5000],['skin10','Галерея Verity','Открой 10 скинов',()=>S.skinsOwned.length>=10,100000],['skin20','Модный мастер','Открой 20 скинов',()=>S.skinsOwned.length>=20,1e6],
+    ['clickup5','Сила пальца','Прокачай улучшение клика до 5',()=>upLvl('click1')>=5,10000],['clickup25','Ударная мощь','Суммарно 25 уровней улучшений клика',()=>UPGRADES.filter(u=>u.cat==='click').reduce((a,u)=>a+upLvl(u.id),0)>=25,50000],['autoup10','Автоматизация','Суммарно 10 уровней автоулучшений',()=>UPGRADES.filter(u=>u.cat==='auto').reduce((a,u)=>a+upLvl(u.id),0)>=10,25000],['autoup50','Фабричный магнат','Суммарно 50 уровней автоулучшений',()=>UPGRADES.filter(u=>u.cat==='auto').reduce((a,u)=>a+upLvl(u.id),0)>=50,250000],
+    ['daily3','Три дня подряд','Забери награды 3 дня подряд',()=>S.daily.streak>=3,10000],['daily7','Неделя верности','Забери награды 7 дней подряд',()=>S.daily.streak>=7,100000],['daily14','Две недели вместе','Забери награды 14 дней подряд',()=>S.daily.streak>=14,1e6],
+    ['pet1','Первый друг','Получи первого питомца',()=>S.pets.inventory.length>=1,5000],['pet5','Звериная команда','Собери 5 питомцев',()=>S.pets.inventory.length>=5,25000],['pet15','Зоопарк','Собери 15 питомцев',()=>S.pets.inventory.length>=15,250000],['pet30','Полная коллекция','Собери 30 питомцев',()=>new Set(S.pets.inventory.map(p=>p.id)).size>=30,2e6],
+    ['egg1','Инкубатор','Открой первое яйцо',()=>S.pets.eggsOpened>=1,5000],['egg25','Яичный мастер','Открой 25 яиц',()=>S.pets.eggsOpened>=25,100000],['egg100','Фабрика питомцев','Открой 100 яиц',()=>S.pets.eggsOpened>=100,1e6],
+    ['wheel1','Фортуна улыбается','Сделай первое вращение',()=>S.wheel.totalSpins>=1,5000],['wheel25','Любимчик удачи','Сделай 25 вращений',()=>S.wheel.totalSpins>=25,100000],['wheel100','Мастер колеса','Сделай 100 вращений',()=>S.wheel.totalSpins>=100,1e6],
+    ['luck5','Удача рядом','Купи 5 улучшений удачи',()=>S.pets.luckLevel>=5,25000],['equip3','Полная команда','Экипируй 3 питомцев',()=>S.pets.equipped.length>=3,50000],['title3','Собиратель титулов','Открой 3 титула',()=>S.titles.owned.length>=3,50000],['title10','Зал славы','Открой 10 титулов',()=>S.titles.owned.length>=10,500000],
+    ['rich','Первый капитал','Держи 1 млн монет на балансе',()=>S.maxMoney>=1e6,25000],['rich1b','Несметное богатство','Держи 1 млрд монет на балансе',()=>S.maxMoney>=1e9,5e6],['event','Охотник за событиями','Заработай 100 000 монет во время событий',()=>S.eventEarned>=100000,50000],['clickday','Активный день','Сделай 1 000 кликов за день',()=>S.periodStats.day.clicks>=1000,15000],['earnweek','Неделя богатства','Заработай 10 млн за неделю',()=>S.periodStats.week.coins>=1e7,150000],['allround','Универсал','Сделай 1 престиж и собери 5 скинов',()=>S.prestige>=1&&S.skinsOwned.length>=5,100000]
+  ];
+  defs.forEach(function(d){ACHIEVEMENTS.push({id:d[0],name:d[1],desc:d[2],check:d[3],reward:{money:d[4],xp:Math.max(20,Math.floor(d[4]/100))}});});
+})();
+
+/* ================= РАСЧЁТЫ ================= */
+function getClickPower(){
+  var p=1;
+  p+=upLvl('click1')*1+upLvl('click2')*5+upLvl('click3')*25+upLvl('click4')*120+upLvl('click5')*700+upLvl('click6')*3500+upLvl('click7')*18000+upLvl('click8')*90000+upLvl('click9')*450000+upLvl('click10')*2500000+upLvl('click11')*12000000+upLvl('click12')*60000000+upLvl('click13')*300000000+upLvl('click14')*1500000000+upLvl('click15')*8000000000+upLvl('click16')*4e+10+upLvl('click17')*1.8e+11+upLvl('click18')*8e+11+upLvl('click19')*3.5e+12+upLvl('click20')*1.5e+13+upLvl('click21')*7e+13+upLvl('click22')*3e+14+upLvl('click23')*1.3e+15+upLvl('click24')*6e+15+upLvl('click25')*2.5e+16+upLvl('click26')*1.2e+17+upLvl('click27')*5e+17+upLvl('click28')*2e+18+upLvl('click29')*9e+18+upLvl('click30')*4e+19+upLvl('click31')*1.7e+20+upLvl('click32')*8e+20+upLvl('click33')*3.5e+21+upLvl('click34')*1.5e+22+upLvl('click35')*7e+22;
+  p*=1+upLvl('mult')*0.1;
+  p*=1+S.prestigePoints*(0.25+upLvl('prestigepower')*0.02);
+  p*=1+upLvl('globalboost')*0.05;
+  p*=1+Math.floor(S.level/5)*0.05;
+   p*=skinBonus();
+  p*=getPetMultiplier('click');p*=getTitleMultiplier();
+  if(activeEvent&&activeEvent.type==='happy')p*=2;
+  return Math.floor(p);
+}
+function getIncome(){
+  var i=upLvl('auto1')*1+upLvl('auto2')*6+upLvl('auto3')*35+upLvl('auto4')*220+upLvl('auto5')*1300+upLvl('auto6')*6500+upLvl('auto7')*32000+upLvl('auto8')*160000+upLvl('auto9')*800000+upLvl('auto10')*4000000+upLvl('auto11')*20000000+upLvl('auto12')*100000000+upLvl('auto13')*500000000+upLvl('auto14')*2500000000+upLvl('auto15')*12000000000+upLvl('auto16')*4e+10+upLvl('auto17')*1.8e+11+upLvl('auto18')*8e+11+upLvl('auto19')*3.5e+12+upLvl('auto20')*1.5e+13+upLvl('auto21')*7e+13+upLvl('auto22')*3e+14+upLvl('auto23')*1.3e+15+upLvl('auto24')*6e+15+upLvl('auto25')*2.5e+16+upLvl('auto26')*1.2e+17+upLvl('auto27')*5e+17+upLvl('auto28')*2e+18+upLvl('auto29')*9e+18+upLvl('auto30')*4e+19+upLvl('auto31')*1.7e+20+upLvl('auto32')*8e+20+upLvl('auto33')*3.5e+21+upLvl('auto34')*1.5e+22+upLvl('auto35')*7e+22;
+  i*=1+upLvl('incboost')*0.15;
+   i*=1+Math.floor(S.level/10)*0.08;
+  i*=1+S.prestigePoints*(0.25+upLvl('prestigepower')*0.02);
+  i*=1+upLvl('globalboost')*0.05;
+  i*=skinBonus();
+  i*=getPetMultiplier('income');i*=getTitleMultiplier();if(Date.now()<(S.adBoostUntil||0))i*=2;
+  if(activeEvent&&activeEvent.type==='happy')i*=2;
+  return i;
+}
+function getCritChance(){
+  var c=0.03+upLvl('crit')*0.02+Math.floor(S.level/15)*0.01;
+  if(activeEvent&&activeEvent.type==='luck')c+=0.25;
+  return Math.min(0.5,c);
+}
+function xpNeed(l){return Math.floor(60*Math.pow(l,1.35));}
+function addMoney(n){if(!Number.isFinite(n)||n<=0)return;S.money+=n;S.totalEarned+=n;S.runEarned=(S.runEarned||0)+n;updatePeriodStat('coins',n);if(activeEvent)S.eventEarned=(S.eventEarned||0)+n;if(S.money>S.maxMoney)S.maxMoney=S.money;if(!S.prestigeNoticeShown&&S.money>=prestigeRequirement()){S.prestigeNoticeShown=true;toast('✨ Доступен престиж! Можно совершить перерождение.');sfx('reward');}}
+function addXp(n){
+  n=n*(1+upLvl('xpboost')*0.2);
+  S.xp+=n;var leveled=false;
+  while(S.xp>=xpNeed(S.level)){
+    S.xp-=xpNeed(S.level);S.level++;leveled=true;
+    var bonus=S.level*100;addMoney(bonus);
+    toast('Уровень '+S.level+'! +'+fmt(bonus)+' монет');
+  }
+  if(leveled){sfx('level');grantUnlocks();}checkTitles();
+}
+
+/* ================= КОМБО ================= */
+var combo=0,lastClick=0;
+function comboMultFor(c){
+  if(c>=25)return 2.5+upLvl('combo')*0.1;
+  if(c>=15)return 2;
+  if(c>=10)return 1.5;
+  if(c>=5)return 1.2;
+  return 1;
+}
+function updateCombo(){
+  var box=document.getElementById('comboBox');
+  var cnt=document.getElementById('comboCount');
+  var mult=document.getElementById('comboMult');
+  if(combo<2){box.style.display='none';return;}
+  box.style.display='flex';
+  cnt.textContent=combo;
+  var m=comboMultFor(combo);
+  mult.textContent='x'+(Math.round(m*10)/10);
+  cnt.classList.remove('pop');void cnt.offsetWidth;cnt.classList.add('pop');
+}
+
+/* ================= КЛИК ================= */
+var orb=document.getElementById('orb'),wrap=document.getElementById('orbWrap');
+function clickOrb(e){
+  var now=Date.now();
+  if(now-lastClick<1000)combo++;else combo=1;
+  lastClick=now;
+  if(combo>S.maxCombo)S.maxCombo=combo;
+  S.totalClicks++;updatePeriodStat('clicks',1);
+  var reward=getClickPower();
+  var critType=0;
+  if(Math.random()<getCritChance()){
+    critType=Math.random()<Math.min(0.5,0.1+upLvl('luck')*0.01)?2:1;
+    reward*=critType===2?10+upLvl('critpower')*2:5+upLvl('critpower');
+  }
+  if(activeEvent&&activeEvent.type==='golden')reward*=3;
+  reward*=comboMultFor(combo);
+  addMoney(reward);
+  addXp(1+Math.floor(S.level/10));
+  floatText('+'+fmt(reward),critType===2?'supercrit':critType===1?'crit':'',e);
+  if(critType)sfx('crit');else sfx('click');
+  if(combo===10)sfx('combo');
+  if(combo===20)sfx('combo2');
+  wrap.classList.add('pressed');
+  setTimeout(function(){wrap.classList.remove('pressed');},120);
+  checkAchievements();
+  updateCombo();
+  updateUI();
+}
+orb.addEventListener('pointerdown',clickOrb);
+function floatText(text,cls,e){
+  var f=document.createElement('div');
+  f.className='float'+(cls?' '+cls:'');
+  f.textContent=text;
+  var r=wrap.getBoundingClientRect();
+  var x=e&&e.clientX?e.clientX:r.left+r.width/2;
+  var y=e&&e.clientY?e.clientY:r.top+r.height/2;
+  f.style.left=(x-r.left+(Math.random()*60-30))+'px';
+  f.style.top=(y-r.top-10)+'px';
+  wrap.appendChild(f);
+  setTimeout(function(){f.remove();},850);
+}
+
+/* ================= МАГАЗИН ================= */
+var shopCat='click';
+function upgradeIcon(u){
+  var icons={
+    click1:'👆',click2:'🖱️',click3:'💥',click4:'⚡',click5:'🌟',click6:'🔮',click7:'💨',click8:'🌌',click9:'💠',click10:'✨',click11:'🌀',click12:'🌠',click13:'♾️',click14:'☀️',click15:'👑',
+    auto1:'🤖',auto2:'🦾',auto3:'🤖',auto4:'🏭',auto5:'💰',auto6:'🌱',auto7:'⚙️',auto8:'🚀',auto9:'🪐',auto10:'🏙️',auto11:'🛰️',auto12:'🌌',auto13:'🔋',auto14:'🌟',auto15:'🌍',
+    click16:'🛡️',click17:'⚛️',click18:'☀️',click19:'🌟',click20:'🥊',click21:'🌀',click22:'🪐',click23:'💫',click24:'💥',click25:'👑',click26:'🌑',click27:'🌌',click28:'♾️',click29:'🌠',click30:'☄️',click31:'🔆',click32:'🏛️',click33:'💎',click34:'🏆',click35:'🚀',auto16:'🏭',auto17:'⚛️',auto18:'☀️',auto19:'🌟',auto20:'🔬',auto21:'🚀',auto22:'🪐',auto23:'💫',auto24:'💥',auto25:'🌌',auto26:'🌑',auto27:'🛰️',auto28:'♾️',auto29:'🌠',auto30:'☄️',auto31:'🔆',auto32:'🏛️',auto33:'💎',auto34:'🏆',auto35:'🌈',
+    crit:'🍀',mult:'✖️',xpboost:'📘',incboost:'📈',critpower:'💫',combo:'🎯',luck:'🍀',petluck:'🐾',globalboost:'🌟',offlineboost:'🌙',prestigepower:'♻️'
+  };
+  return icons[u.id]||'✨';
+}
+function switchShop(cat){
+  shopCat=cat;
+  document.querySelectorAll('.shop-tab').forEach(function(b){b.classList.toggle('active',b.dataset.cat===cat);});
+  renderShop();
+}
+function renderShop(){
+  var grid=document.getElementById('shopGrid');
+  grid.innerHTML=UPGRADES.filter(function(u){return u.cat===shopCat;}).map(function(u){
+    var lvl=upLvl(u.id);
+    var maxed=u.max&&lvl>=u.max;
+    var cost=upCost(u);
+    return '<div class="card" data-id="'+u.id+'">'+
+      '<div class="card-visual"><span>'+upgradeIcon(u)+'</span></div>'+
+      '<div class="card-head"><b>'+u.name+'</b><span class="lvl">ур. '+lvl+(u.max?'/'+u.max:'')+'</span></div>'+
+      '<p class="card-desc">'+u.desc+'</p>'+
+      '<div class="card-foot"><span class="price">'+coinIcon()+fmt(cost)+'</span>'+
+      '<button class="buy" onclick="buyUp(\''+u.id+'\')" '+(maxed?'disabled':'')+'>'+(maxed?'Макс':'Купить')+'</button></div></div>';
+  }).join('');
+  updateShopButtons();
+}
+function updateShopButtons(){
+  document.querySelectorAll('#shopGrid .card').forEach(function(card){
+    var u=UPGRADES.find(function(x){return x.id===card.dataset.id;});
+    if(!u)return;
+    var btn=card.querySelector('button');
+    var maxed=u.max&&upLvl(u.id)>=u.max;
+    btn.disabled=!maxed&&S.money<upCost(u);
+  });
+}
+function buyUp(id){
+  var u=UPGRADES.find(function(x){return x.id===id;});
+  if(!u)return;
+  var lvl=upLvl(id);
+  if(u.max&&lvl>=u.max){toast('Максимальный уровень!');return;}
+  var cost=upCost(u);
+  if(S.money<cost){toast('Не хватает монет');return;}
+  S.money-=cost;
+  if(S.money<prestigeRequirement())S.prestigeNoticeShown=false;
+  S.upgrades[id]=lvl+1;
+  S.buys++;
+  addXp(Math.max(5,Math.floor(cost/50)));
+  sfx('buy');
+  toast(u.name+' — уровень '+(lvl+1));
+  renderShop();
+  checkAchievements();
+  save();
+  updateUI();
+}
+
+/* ================= СКИНЫ ================= */
+function applySkin(){
+  wrap.classList.remove('skin-normal','skin-red','skin-blue','skin-green','skin-purple','skin-rainbow','skin-fire','skin-cosmic','skin-gold','skin-diamond','skin-electric','skin-ice','skin-ghost','skin-royal','skin-dark','skin-money','skin-neon','skin-emerald','skin-sunset','skin-plasma','skin-void','skin-star','skin-crystal','skin-lava','skin-cyber','skin-aurora','skin-candy','skin-galaxy','skin-secret','skin-bronze','skin-ruby','skin-sapphire','skin-toxic','skin-ocean','skin-cotton','skin-chocolate','skin-magma','skin-glitch','skin-angel','skin-demon','skin-prism','skin-pixel','skin-forest','skin-storm','skin-moon','skin-pink','skin-mint');
+  wrap.classList.add('skin-'+S.skin);
+}
+function tapSkin(id){
+  var sk=SKINS.find(function(x){return x.id===id;});
+  if(!sk)return;
+  var owned=S.skinsOwned.indexOf(id)!==-1;
+  if(!owned){
+    if(sk.unlock){toast('🔒 Скин откроется: '+unlockText(sk));return;}
+    if(S.money<sk.price){toast('Не хватает монет');return;}
+    S.money-=sk.price;
+    if(S.money<prestigeRequirement())S.prestigeNoticeShown=false;
+    S.skinsOwned.push(id);
+    toast('Куплен скин: '+sk.name+'!');
+  }
+  S.skin=id;
+  applySkin();
+  sfx('buy');
+  renderSkins();
+  save();
+  updateUI();
+}
+function grantUnlocks(){
+  SKINS.forEach(function(sk){
+    if(sk.unlock&&S.skinsOwned.indexOf(sk.id)===-1){
+      var ok=sk.unlock.type==='level'?S.level>=sk.unlock.value:S.achievements.indexOf(sk.unlock.value)!==-1;
+      if(ok){S.skinsOwned.push(sk.id);toast('🎨 Открыт скин: '+sk.name+'!');sfx('reward');}
+    }
+  });
+}
+function renderSkins(){
+  var grid=document.getElementById('skinGrid');
+  grid.innerHTML=SKINS.map(function(sk){
+    var owned=S.skinsOwned.indexOf(sk.id)!==-1;
+    var sel=S.skin===sk.id;
+    var cls='skin-card skin-'+sk.id+(sel?' sel':'')+(owned?' owned':' locked');
+    var priceTxt=owned?(sel?'✓ Выбран':'Надеть'):(sk.unlock?'🔒 '+unlockText(sk):coinIcon()+fmt(sk.price));
+    return '<div class="'+cls+'" onclick="tapSkin(\''+sk.id+'\')">'+
+      '<div class="vorb skin-'+sk.id+'"><div class="eyes"><i></i><i></i></div><div class="mouth"></div></div>'+
+      '<b>'+sk.name+'</b><p>Бонус +'+Math.round((sk.bonus||0)*100)+'%</p>'+
+      '<span class="skin-price">'+priceTxt+'</span></div>';
+  }).join('');
+}
+
+/* ================= ДОСТИЖЕНИЯ ================= */
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(function(a){
+    if(S.achievements.indexOf(a.id)===-1&&a.check()){
+      S.achievements.push(a.id);
+      addMoney(a.reward.money||0);
+      if(a.reward.xp)addXp(a.reward.xp);
+      toast('🏆 Достижение: '+a.name+'! +'+fmt(a.reward.money||0)+' монет');
+      sfx('reward');
+    }
+  });
+  grantUnlocks();
+}
+
+/* ================= КВЕСТЫ ================= */
+function ensureQuests(){var dayKey=new Date().toLocaleDateString('ru-RU');if(S.questDate!==dayKey||!Array.isArray(S.quests)){genQuests();S.questDate=dayKey;save();}}
+function genQuests(){
+  var sc=1+S.level*0.4;
+  S.quests=[
+    {type:'clicks',goal:Math.round(100*sc),start:S.totalClicks,claimed:false},
+    {type:'earn',goal:Math.round(1000*sc),start:S.totalEarned,claimed:false},
+    {type:'buy',goal:5,start:S.buys,claimed:false}
+  ];
+}
+function questInfo(q){
+  var cur=0,label='',rewardM=0,rewardX=0;
+  if(q.type==='clicks'){cur=S.totalClicks-q.start;label='Сделай '+fmt(q.goal)+' кликов';rewardM=q.goal;rewardX=q.goal*0.3;}
+  else if(q.type==='earn'){cur=S.totalEarned-q.start;label='Заработай '+fmt(q.goal)+' монет';rewardM=q.goal*0.4;rewardX=q.goal*0.05;}
+  else if(q.type==='buy'){cur=S.buys-q.start;label='Купи '+q.goal+' улучшений';rewardM=300*q.goal*(1+S.level*0.3);rewardX=q.goal*30;}
+  var done=cur>=q.goal;
+  return{cur:Math.min(cur,q.goal),label:label,rewardM:Math.round(rewardM),rewardX:Math.round(rewardX),done:done};
+}
+function claimQuest(i){
+  var q=S.quests[i];
+  if(!q)return;
+  var info=questInfo(q);
+  if(q.claimed||!info.done)return;
+  q.claimed=true;
+  addMoney(info.rewardM);
+  addXp(info.rewardX);
+  toast('Квест выполнен! +'+fmt(info.rewardM)+' монет');
+  sfx('reward');
+  if(S.quests.every(function(x){return x.claimed;}))toast('🌟 Все задания на сегодня выполнены! Новые будут завтра.');
+  if(modalType==='quests')renderModal();
+  save();
+  updateUI();
+}
+
+/* ================= СОБЫТИЯ ================= */
+var activeEvent=null;
+var EVENT_DEFS=[
+ {type:'golden',label:'🟡 Золотой Верити: клики x3',dur:30000},
+ {type:'happy',label:'⏰ Счастливый час: доход x2',dur:60000},
+ {type:'rain',label:'🌧 Монетный дождь!',dur:0},
+ {type:'luck',label:'🍀 Удача: шанс крита +25%',dur:60000}
+];
+function maybeEvent(){
+  var now=Date.now();
+  if(activeEvent){
+    if(now>=activeEvent.ends){activeEvent=null;}
+    return;
+  }
+  if(now<S.nextEvent)return;
+  var def=EVENT_DEFS[Math.floor(Math.random()*EVENT_DEFS.length)];
+  if(def.type==='rain'){
+    var bonus=Math.max(50,getIncome()*30);
+    addMoney(bonus);
+    toast('Монетный дождь! +'+fmt(bonus)+' монет');
+    sfx('reward');
+    S.nextEvent=now+120000+Math.random()*120000;
+    return;
+  }
+  activeEvent={type:def.type,label:def.label,ends:now+def.dur};
+  toast(def.label);
+  sfx('reward');
+  S.nextEvent=now+180000+Math.random()*120000;
+}
+function renderBanner(){
+  var b=document.getElementById('banner');
+  if(activeEvent){
+    b.style.display='block';
+    b.textContent=activeEvent.label+' — '+Math.ceil((activeEvent.ends-Date.now())/1000)+' сек';
+  }else{b.style.display='none';}
+}
+
+/* ================= ЕЖЕДНЕВКА ================= */
+function dailyInfo(){
+  var now=Date.now(),last=Number(S.daily.last)||0,elapsed=last?now-last:Infinity;
+  var available=!last||elapsed>=86400000;
+  var streak=S.daily.streak||0;
+  if(available)streak=(!last||elapsed>172800000||streak>=14)?1:Math.min(14,streak+1);
+  var day=Math.max(1,Math.min(14,streak));
+  var rewards=[{money:100000,icon:'🪙'},{money:250000,icon:'💰'},{money:500000,egg:'basic',icon:'🥚'},{money:1000000,icon:'💎'},{money:2500000,spins:1,icon:'🎡'},{money:5000000,icon:'🧰'},{money:10000000,petRarity:'epic',icon:'🦊'},{money:20000000,icon:'🌟'},{money:35000000,icon:'💠'},{money:50000000,egg:'rare',icon:'🔵'},{money:100000000,icon:'👑'},{money:250000000,spins:3,icon:'🎡'},{money:500000000,icon:'🌈'},{money:1000000000,petRarity:'legendary',icon:'🐉'}];
+  return{available:available,streak:day,reward:rewards[day-1].money,rewards:rewards,elapsed:elapsed};
+}
+function claimDaily(){
+  var d=dailyInfo();if(!d.available){toast('Награда уже получена — дождись таймера!');return;}
+  var r=d.rewards[d.streak-1];S.daily.last=Date.now();S.daily.streak=d.streak;S.daily.cycleComplete=d.streak===14;
+  addMoney(r.money);addXp(100*d.streak);
+  if(r.egg)grantEgg(r.egg);if(r.spins)S.wheel.bonusSpins=(S.wheel.bonusSpins||0)+r.spins;
+  if(r.petRarity)grantRandomPet(r.petRarity);
+  checkAchievements();checkTitles();
+  toast('🎁 День '+d.streak+': награда получена!');sfx('reward');
+  if(modalType==='daily')renderModal();save();updateUI();
+}
+
+/* ================= ПРЕСТИЖ ================= */
+function prestigeRequirement(){return Math.floor(Math.min(1e15,1000000*Math.pow(2.5,Math.max(0,S.prestige||0))));}
+function prestigeGain(){return S.money>=prestigeRequirement()?1:0;}
+function doPrestige(){
+  var gain=prestigeGain();
+  if(gain<1){toast('Нужно иметь '+fmt(prestigeRequirement())+' монет на балансе');return;}
+  if(!confirm('Начать заново? Баланс и улучшения сбросятся.\nНаграда: '+gain+' очко престижа (+25% к клику и доходу навсегда).'))return;
+  S.money=0;
+  S.runEarned=0;
+  S.prestigeNoticeShown=false;
+  S.upgrades={};
+  S.prestige++;S.pets=S.pets||{inventory:[],equipped:[],luckLevel:0,slotsLevel:0};
+  S.prestigePoints+=gain;updatePeriodStat('prestiges',1);checkTitles();
+  toast('♻️ Престиж! +'+gain+' очко престижа');
+  sfx('level');
+  ensureQuests();
+  renderShop();
+  save();
+  updateUI();
+  closeModal();
+}
+
+/* ================= РЕКЛАМА ЯНДЕКС ИГР ================= */
+var ysdk=null;var yandexPlayer=null;
+var yandexReady=false;
+var leaderboardBusy=false;
+var leaderboardCategory='clicks';
+var leaderboardNames={time:'verity_playtime',clicks:'verity_clicks',coins:'verity_coins',prestiges:'verity_prestiges'};var leaderboardPeriod='all';
+var adPaused=false,adRequestBusy=false;
+function setAdPreview(){
+  var el=document.getElementById('adPreview');
+  if(el)el.style.display=yandexReady?'none':'flex';
+}
+function initYandexSDK(){
+  if(typeof YaGames==='undefined'||!YaGames.init){setAdPreview();return Promise.resolve(false);}
+  return YaGames.init().then(function(sdk){
+    ysdk=sdk;yandexReady=true;setAdPreview();
+    if(ysdk.getPlayer)ysdk.getPlayer({scopes:false}).then(function(p){yandexPlayer=p;}).catch(function(){});
+    if(ysdk.adv&&ysdk.adv.showBannerAdv&&ysdk.adv.getBannerAdvStatus){
+      Promise.resolve(ysdk.adv.getBannerAdvStatus()).then(function(st){
+        if(!st.stickyAdvIsShowing)Promise.resolve(ysdk.adv.showBannerAdv()).catch(function(){});
+      }).catch(function(){});
+    }
+    if(ysdk.on){
+      ysdk.on('game_api_pause',function(){adPaused=true;stopMusic();});
+      ysdk.on('game_api_resume',function(){adPaused=false;if(S.settings.music)startMusic();});
+    }
+    syncLeaderboards();return true;
+  }).catch(function(e){console.warn('Yandex SDK init:',e);setAdPreview();return false;});
+}
+function showRewardedAd(onReward){
+  if(!ysdk||!ysdk.adv||!ysdk.adv.showRewardedVideo){toast('Видео появится после подключения монетизации Яндекс Игр');return;}
+  var rewarded=false;
+  try{ysdk.adv.showRewardedVideo({callbacks:{
+    onOpen:function(){adPaused=true;stopMusic();},
+    onRewarded:function(){if(rewarded)return;rewarded=true;if(typeof onReward==='function')onReward();},
+    onClose:function(wasShown){adPaused=false;if(S.settings.music)startMusic();if(!rewarded&&wasShown)toast('Просмотр не был засчитан — награда не начислена');},
+    onError:function(){adPaused=false;if(S.settings.music)startMusic();toast('Не удалось загрузить рекламу. Попробуй позже');}
+  }});}catch(e){adPaused=false;if(S.settings.music)startMusic();toast('Реклама временно недоступна');}
+}
+function showAdStub(kind){
+  if(kind==='watch'){
+    showRewardedAd(function(){S.adBoostUntil=Date.now()+60000;save();toast('⚡ Доход x2 на 60 секунд!');});
+  }else{
+    showRewardedAd(function(){var reward=Math.max(5000,Math.floor(getIncome()*120));addMoney(reward);save();updateUI();toast('🎁 +'+fmt(reward)+' монет за рекламу!');});
+  }
+}
+function showTimedAdBreak(){
+  if(adRequestBusy||!ysdk||!ysdk.adv||!ysdk.adv.showFullscreenAdv)return;
+  adRequestBusy=true;adPaused=true;stopMusic();
+  try{
+    ysdk.adv.showFullscreenAdv({callbacks:{
+      onOpen:function(){},
+      onClose:function(wasShown){adPaused=false;adRequestBusy=false;S.adBreakSeconds=0;if(S.settings.music)startMusic();save();if(!wasShown)console.log('Fullscreen ad was not shown');},
+      onError:function(){adPaused=false;adRequestBusy=false;S.adBreakSeconds=0;if(S.settings.music)startMusic();}
+    }});
+  }catch(e){adPaused=false;adRequestBusy=false;S.adBreakSeconds=0;if(S.settings.music)startMusic();}
+}
+function claimOffline(multiplier){
+  if(!S.offlinePending)return;
+  var amount=S.offlinePending.amount*multiplier;
+  S.offlinePending=null;
+  addMoney(amount);
+  save();updateUI();closeModal();
+  if(S.returnGiftPending)setTimeout(function(){openModal('returngift');},250);
+  toast('Офлайн-награда: +'+fmt(amount)+' монет');sfx('reward');
+}
+function showOfflineDoubleAd(){
+  if(!S.offlinePending)return;
+  showRewardedAd(function(){claimOffline(2);});
+}
+
+/* ================= ИНТЕРФЕЙС ================= */
+function fmt(n){
+  n=Math.floor(Number(n)||0);
+  if(!Number.isFinite(n))return '∞';
+  if(n<1000)return String(n);
+
+  // Старый компактный формат сохраняется до миллиарда.
+  if(n<1e12){
+    var shortUnits=['','K','M','B'];
+    var shortGroup=Math.floor(Math.log10(n)/3);
+    var shortValue=n/Math.pow(1000,shortGroup);
+    return shortValue.toFixed(2)+shortUnits[shortGroup];
+  }
+
+  // Начиная с триллиона используем русские названия разрядов.
+  var bigNames=[
+    'триллион','квадриллион','квинтиллион','секстиллион','септиллион',
+    'октиллион','нониллион','дециллион','ундециллион','дуодециллион',
+    'тредециллион','кваттордециллион','квиндециллион','сексдециллион',
+    'септендециллион','октодециллион','новемдециллион','вигинтиллион',
+    'унвигинтиллион','дуовигинтиллион','тревигинтиллион',
+    'кватторвигинтиллион','квинвигинтиллион','сексвигинтиллион',
+    'септенвигинтиллион','октовигинтиллион','новемвигинтиллион',
+    'тригинтиллион','унтригинтиллион','дуотригинтиллион',
+    'третригинтиллион','кваттортригинтиллион','квинтригинтиллион',
+    'секстригинтиллион','септентригинтиллион','октотригинтиллион',
+    'новемтригинтиллион','квадрагинтиллион','квинквагинтиллион',
+    'сексагинтиллион','септуагинтиллион','октогинтиллион',
+    'нонагинтиллион','центиллион'
+  ];
+  var group=Math.floor(Math.log10(n)/3);
+  var index=group-4;
+  if(index>=bigNames.length)return n.toExponential(2).replace('e+',' × 10^');
+  var scaled=n/Math.pow(1000,group);
+  return scaled.toFixed(2)+' '+bigNames[index];
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('active',s.id==='screen-'+id);});
+  document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('active',b.dataset.screen===id);});
+  if(id==='shop')renderShop();
+  if(id==='skins')renderSkins();
+  if(id==='pets')renderPets();
+}
+function updateUI(){
+  document.getElementById('money').textContent=fmt(S.money);
+  document.getElementById('perClick').textContent='+'+fmt(getClickPower());
+  document.getElementById('perSec').textContent=fmt(getIncome())+' / сек';
+  document.getElementById('lvl').textContent=S.level;
+  var need=xpNeed(S.level);
+  document.getElementById('xpFill').style.width=Math.min(100,S.xp/need*100)+'%';
+  document.getElementById('xpText').textContent=fmt(S.xp)+' / '+fmt(need)+' опыта';
+  updateShopButtons();
+  var dailyBtn=document.getElementById('dailyHomeBadge');if(dailyBtn)dailyBtn.style.display=dailyInfo().available?'inline-block':'none';
+  var returnBtn=document.getElementById('returnHomeBtn');if(returnBtn)returnBtn.style.display=S.returnGiftPending?'block':'none';
+  if(document.getElementById('petCount')){document.getElementById('petCount').textContent=new Set(S.pets.inventory.map(function(p){return p.id;})).size+'/'+PETS.length;document.getElementById('petSlots').textContent=petSlots();}
+}
+var toastTimer=null;
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2600);
+}
+
+/* ================= МОДАЛКИ ================= */
+var modalType=null;
+function openModal(type){modalType=type;document.getElementById('modalBg').style.display='flex';renderModal();if(type==='leaderboards')loadLeaderboard(leaderboardCategory);}
+function closeModal(){modalType=null;document.getElementById('modalBg').style.display='none';}
+function renderModal(){
+  if(!modalType)return;
+  var t=document.getElementById('modalTitle');
+  var b=document.getElementById('modalBody');
+  if(modalType==='quests'){t.textContent='📋 Ежедневные задания';b.innerHTML=htmlQuests();}
+  else if(modalType==='achievements'){t.textContent='🏆 Достижения';b.innerHTML=htmlAch();}
+  else if(modalType==='daily'){t.textContent='🎁 Ежедневная награда';b.innerHTML=htmlDaily();}
+  else if(modalType==='prestige'){t.textContent='♻️ Престиж';b.innerHTML=htmlPrestige();}
+  else if(modalType==='stats'){t.textContent='📊 Статистика';b.innerHTML=htmlStats();}
+  else if(modalType==='levelrewards'){t.textContent='⭐ Награды уровней';b.innerHTML=htmlLevelRewards();}
+  else if(modalType==='ad'){t.textContent='📺 Реклама';b.innerHTML=htmlAd('watch');}
+  else if(modalType==='adfree'){t.textContent='🎁 Бесплатная награда';b.innerHTML=htmlAd('free');}
+  else if(modalType==='offline'){t.textContent='🌙 С возвращением!';b.innerHTML=htmlOffline();}
+  else if(modalType==='returngift'){t.textContent='🎁 Бонус за возвращение';b.innerHTML=htmlReturnGift();}
+  else if(modalType==='leaderboards'){t.textContent='🌍 Таблица лидеров';b.innerHTML=htmlLeaderboards();}
+  else if(modalType==='wheel'){t.textContent='🎡 Колесо фортуны';b.innerHTML=htmlWheel();}
+  else if(modalType==='titles'){t.textContent='👑 Титулы';b.innerHTML=htmlTitles();}
+}
+function coinIcon(){return '<span class="coin-icon" aria-label="монеты"></span> ';}
+function htmlQuests(){
+  return S.quests.map(function(q,i){
+    var info=questInfo(q);
+    var pct=Math.min(100,info.cur/info.goal*100);
+    var btn=q.claimed?'<button class="buy" disabled>Получено</button>':(info.done?'<button class="buy" onclick="claimQuest('+i+')">Забрать награду</button>':'<button class="buy" disabled>В процессе</button>');
+    return '<div class="modal-item"><b>'+info.label+'</b>'+
+      '<div class="progress"><i style="width:'+pct+'%"></i></div>'+
+      '<p>'+fmt(info.cur)+' / '+fmt(info.goal)+'</p>'+
+      '<p>Награда: <b>'+coinIcon()+fmt(info.rewardM)+'</b> и <b>'+fmt(info.rewardX)+' опыта</b></p>'+btn+'</div>';
+  }).join('');
+}
+function htmlAch(){
+  return ACHIEVEMENTS.map(function(a){
+    var done=S.achievements.indexOf(a.id)!==-1;
+    return '<div class="modal-item"><b>'+(done?'✅ ':'⬜ ')+a.name+'</b><p>'+a.desc+'</p><p>Награда: <b>'+coinIcon()+fmt(a.reward.money)+'</b> и <b>'+fmt(a.reward.xp)+' опыта</b></p></div>';
+  }).join('');
+}
+function htmlDaily(){
+  var d=dailyInfo(),shownStreak=(d.available&&(S.daily.cycleComplete||d.streak===1))?0:(S.daily.streak||0),html='<div class="modal-item"><b>🔥 Серия входов: '+shownStreak+'/14</b><p>Заходи каждый день и забирай награду. Календарь показывает все 14 дней и будущие подарки. Следующая награда доступна через 24 часа. Если опоздать больше чем на 48 часов — серия сбросится.</p>';
+  if(d.available)html+='<p style="color:#ffd84b;font-weight:bold">Можно забрать награду за день '+d.streak+'!</p><button class="buy" onclick="claimDaily()">ЗАБРАТЬ НАГРАДУ</button>';
+  else html+='<p>Следующая награда через: <b id="dailyCountdown">'+formatClock(Math.ceil((86400000-(Date.now()-S.daily.last))/1000))+'</b></p>';
+  html+='</div><div class="day-grid">';
+  d.rewards.forEach(function(r,i){var day=i+1,done=(!d.available&&S.daily.cycleComplete)||(!S.daily.cycleComplete&&day<=(S.daily.streak||0)&&S.daily.last>0),active=d.available&&day===d.streak;var label=done?'✅ Получено':active?'🎁 Доступно':day===((S.daily.streak||0)+1)?'⏳ Скоро':'🔒 Закрыто';html+='<div class="day-card '+(done?'done':active?'next':'')+'"><div class="day-art">'+r.icon+'</div><b>День '+day+'</b><p class="lb-note">'+fmt(r.money)+' монет'+(r.egg?' + яйцо':'')+(r.spins?' + '+r.spins+' вращ.':'')+(r.petRarity?' + питомец':'')+'</p><small>'+label+'</small></div>';});
+  return html+'</div>';
+}
+
+function htmlPrestige(){
+  var gain=prestigeGain();
+  var can=gain>=1;
+  return '<div class="modal-item">'+
+    '<p>Престиж сбрасывает баланс и улучшения, но даёт <b>очки престижа</b>. Каждое очко даёт <b>+25%</b> к силе клика и доходу навсегда.</p>'+
+    '<p>Текущие очки: <b>'+S.prestigePoints+'</b> (престижей: '+S.prestige+')</p>'+
+    '<p>Сейчас получите: <b>'+gain+' очко</b></p>'+
+    '<p>Условие: иметь <b>'+fmt(prestigeRequirement())+' монет на балансе</b>.</p>'+
+    '<p>Текущий баланс: <b>'+fmt(S.money)+' / '+fmt(prestigeRequirement())+'</b></p>'+
+    '<button class="buy" onclick="doPrestige()" '+(can?'':'disabled')+'>'+(can?'Сделать престиж':'Недоступно')+'</button></div>';
+}
+function htmlLevelRewards(){
+  var milestones=[[5,'+5% к силе клика'],[10,'+8% к пассивному доходу и Алмазный скин'],[15,'+1% к шансу крита и Электрический скин'],[20,'Открывается Радужный скин'],[25,'+5% к силе клика и Ледяной скин'],[30,'Призрачный скин'],[40,'+8% к пассивному доходу и Королевский скин'],[50,'+5% к силе клика и Тёмная материя'],[60,'Денежный скин с бонусом +100%'],[70,'Открывается Неоновый скин'],[80,'Открывается Изумрудный скин'],[100,'Открывается скин Закат'],[120,'Открывается Плазменный скин'],[150,'Открывается скин Пустота'],[200,'Открывается Звёздный скин']];
+  return milestones.map(function(m){var done=S.level>=m[0];return '<div class="modal-item"><b>'+(done?'✅ ':'🔒 ')+'Уровень '+m[0]+'</b><p>'+m[1]+'</p><p>'+(done?'Получено':'Осталось уровней: '+(m[0]-S.level))+'</p></div>';}).join('');
+}
+function htmlStats(){
+  var h=Math.floor(S.playTime/3600),m=Math.floor((S.playTime%3600)/60),sec=Math.floor(S.playTime%60);
+  var rows=[
+    ['👆','Всего кликов',fmt(S.totalClicks),'stat-gold'],
+    ['🪙','Всего заработано',coinIcon()+fmt(S.totalEarned),'stat-green'],
+    ['💰','Максимальный баланс',coinIcon()+fmt(S.maxMoney),'stat-gold'],
+    ['🛒','Куплено улучшений',fmt(S.buys),'stat-blue'],
+    ['⭐','Текущий уровень',fmt(S.level),'stat-purple'],
+    ['🔥','Максимальное комбо',fmt(S.maxCombo),'stat-orange'],
+    ['♻️','Престижей',fmt(S.prestige)+' <small>(очков: '+fmt(S.prestigePoints)+')</small>','stat-pink'],
+    ['⏱️','Время в игре',h+' ч '+m+' мин '+sec+' сек','stat-blue']
+  ];
+  return '<div class="stats-hero"><div class="stats-hero-icon">📊</div><div><b>Твой прогресс</b><small>История достижений в Verity Clicker</small></div></div>'+
+    '<div class="stats-grid">'+rows.map(function(r){return '<div class="stat-card '+r[3]+'"><div class="stat-top"><span>'+r[0]+'</span><small>'+r[1]+'</small></div><strong>'+r[2]+'</strong></div>';}).join('')+'</div>'+
+    '<div class="stats-foot">✨ Продолжай играть — впереди новые рекорды!</div>';
+}
+function formatClock(seconds){seconds=Math.max(0,Math.floor(seconds||0));var h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;return [h,m,sec].map(function(x){return String(x).padStart(2,'0');}).join(':');}
+function formatDuration(seconds){
+  seconds=Math.max(0,Math.floor(seconds||0));
+  var d=Math.floor(seconds/86400),h=Math.floor(seconds%86400/3600),m=Math.floor(seconds%3600/60);
+  if(d>0)return d+' дн. '+h+' ч '+m+' мин';
+  if(h>0)return h+' ч '+m+' мин';
+  return m+' мин';
+}
+function htmlOffline(){
+  var p=S.offlinePending;if(!p)return '<div class="modal-item"><p>Офлайн-награда уже получена.</p></div>';
+  return '<div class="modal-item"><p>Тебя не было в игре:</p><h2 style="text-align:center;color:#fff;margin:8px 0">'+formatDuration(p.seconds)+'</h2><p style="text-align:center">Заработано офлайн:</p><h2 style="text-align:center;color:var(--gold);margin:8px 0">'+fmt(p.amount)+' монет</h2><div class="offline-limit">⚠️ ЛИМИТ 24 ЧАСА</div><p class="lb-note">Офлайн-доход рассчитывается максимум за 24 часа отсутствия.</p><button class="buy" style="width:100%" onclick="claimOffline(1)">ЗАБРАТЬ НАГРАДУ</button><button class="buy" style="width:100%;margin-top:9px" onclick="showOfflineDoubleAd()">📺 РЕКЛАМА — ПОЛУЧИТЬ x2</button></div>';
+}
+function leaderboardScore(category){
+  if(leaderboardPeriod!=='all'){var ps=S.periodStats[leaderboardPeriod]||{};return Math.floor(ps[category]||0);}
+  if(category==='time')return Math.floor(S.playTime);
+  if(category==='clicks')return Math.floor(S.totalClicks);
+  if(category==='coins')return Math.floor(S.totalEarned);
+  return Math.floor(S.prestige);
+}
+function leaderboardLabel(category){return ({time:'⏱️ Больше всего времени в игре',clicks:'👆 Больше всего кликов',coins:'💰 Больше всего монет',prestiges:'♻️ Больше всего престижей'})[category]||'Рейтинг';}
+function displayLeaderboardScore(category,score){
+  if(category==='time')return formatDuration(score);
+  return fmt(score);
+}
+function htmlLeaderboards(){
+  var cats=[['time','⏱️ Время'],['clicks','👆 Клики'],['coins','💰 Монеты'],['prestiges','♻️ Престижи']];
+  var periods=[['day','За день'],['week','За неделю'],['month','За месяц'],['all','За всё время']];
+  return '<div class="lb-tabs">'+periods.map(function(p){return '<button class="lb-tab '+(leaderboardPeriod===p[0]?'active':'')+'" onclick="setLeaderboardPeriod(\''+p[0]+'\')">'+p[1]+'</button>';}).join('')+'</div><div class="lb-tabs">'+cats.map(function(c){return '<button class="lb-tab '+(leaderboardCategory===c[0]?'active':'')+'" onclick="loadLeaderboard(\''+c[0]+'\')">'+c[1]+'</button>';}).join('')+'</div><div class="modal-item"><b>'+leaderboardLabel(leaderboardCategory)+'</b><div id="leaderboardEntries" style="margin-top:8px"><p class="lb-note">Загружаем рейтинг…</p></div><p class="lb-note" style="margin-top:10px">Твой результат: <b>'+displayLeaderboardScore(leaderboardCategory,leaderboardScore(leaderboardCategory))+'</b><br>Твой титул: <span class="title-pill">'+escapeHtml(S.titles.equipped||'Новичок')+'</span></p><button class="buy" onclick="loadLeaderboard(leaderboardCategory)">Обновить рейтинг</button></div><p class="lb-note">Для всех периодов нужно создать 16 таблиц в консоли Яндекс Игр: verity_playtime, verity_clicks, verity_coins, verity_prestiges и verity_day_/verity_week_/verity_month_ + категория. Все типы — числовые. Важно: SDK Яндекса сам не очищает рейтинги по расписанию; для идеально чистого топа дня/недели/месяца нужен серверный сброс. Сейчас активные игроки перезаписывают свой результат при входе.</p>';
+}
+function setLeaderboardPeriod(period){leaderboardPeriod=period;loadLeaderboard(leaderboardCategory);}
+function loadLeaderboard(category){
+  leaderboardCategory=category||leaderboardCategory;
+  var body=document.getElementById('modalBody');if(body)body.innerHTML=htmlLeaderboards();
+  var target=document.getElementById('leaderboardEntries');if(!target)return;
+  if(!ysdk||!ysdk.leaderboards){target.innerHTML='<p class="lb-note">Рейтинг подключится после запуска игры на платформе Яндекс Игры.</p>';return;}
+  target.innerHTML='<p class="lb-note">Загружаем рейтинг…</p>';
+  var boardName=leaderboardPeriod==='all'?leaderboardNames[leaderboardCategory]:'verity_'+leaderboardPeriod+'_'+leaderboardCategory;
+  ysdk.leaderboards.getEntries(boardName,{quantityTop:100,includeUser:true,quantityAround:3}).then(function(result){
+    var entries=result&&result.entries||[];
+    if(!entries.length){target.innerHTML='<p class="lb-note">Пока здесь нет результатов. Стань первым!</p>';return;}
+    target.innerHTML=entries.map(function(entry,i){var rank=entry.rank||i+1;var player=entry.player||{};var name=player.publicName||'Игрок';var isMe=false;try{isMe=!!(yandexPlayer&&player.uniqueID&&yandexPlayer.getUniqueID&&player.uniqueID===yandexPlayer.getUniqueID());}catch(e){}if(isMe&&rank<=3){var rt=RANK_TITLES.find(function(x){return x.period===leaderboardPeriod&&x.rank===rank;});if(rt){if(S.titles.owned.indexOf(rt.name)===-1)S.titles.owned.push(rt.name);if(!S.titles.rankExpires)S.titles.rankExpires={};var now=new Date(),expiry;if(leaderboardPeriod==='day'){expiry=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);}else if(leaderboardPeriod==='week'){expiry=new Date(now.getFullYear(),now.getMonth(),now.getDate()+7);}else if(leaderboardPeriod==='month'){expiry=new Date(now.getFullYear(),now.getMonth()+1,1);}else expiry=new Date('2999-01-01');S.titles.rankExpires[rt.name]=expiry.getTime();save();}}var score=displayLeaderboardScore(leaderboardCategory,entry.score||0);var medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':('#'+rank);return '<div class="lb-entry"><div class="lb-rank">'+medal+'</div><div class="lb-name">'+escapeHtml(name)+(isMe?' <span class=\"title-pill\">'+escapeHtml(S.titles.equipped||'Новичок')+'</span>':'')+'</div><div class="lb-score">'+score+'</div></div>';}).join('');
+  }).catch(function(e){console.warn('Leaderboard load:',e);target.innerHTML='<p class="lb-note">Не удалось загрузить рейтинг. Проверь, созданы ли таблицы в консоли Яндекс Игр.</p>';});
+}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function syncLeaderboards(){
+  if(!ysdk||!ysdk.leaderboards||leaderboardBusy)return;
+  leaderboardBusy=true;
+  var cats=['time','clicks','coins','prestiges'],periods=['all','day','week','month'],jobs=[];
+  periods.forEach(function(period){cats.forEach(function(cat){var score;if(period==='all'){if(cat==='time')score=Math.floor(S.playTime);else if(cat==='clicks')score=Math.floor(S.totalClicks);else if(cat==='coins')score=Math.floor(S.totalEarned);else score=Math.floor(S.prestige);}else score=Math.floor((S.periodStats[period]||{})[cat]||0);var name=period==='all'?leaderboardNames[cat]:'verity_'+period+'_'+cat;jobs.push({name:name,score:score});});});
+  var i=0;function next(){if(i>=jobs.length){leaderboardBusy=false;return;}var job=jobs[i++];var available=typeof ysdk.isAvailableMethod!=='function'?Promise.resolve(true):ysdk.isAvailableMethod('leaderboards.setScore');Promise.resolve(available).then(function(ok){if(!ok)return;return ysdk.leaderboards.setScore(job.name,job.score);}).catch(function(e){console.warn('Leaderboard score:',job.name,e);}).then(function(){setTimeout(next,1200);});}next();
+}
+
+function htmlAd(kind){
+  if(kind==='watch'){
+    return '<div class="modal-item"><b>⚡ Удвоение дохода</b><p>Посмотри видео и получи <b>x2 к автодоходу на 60 секунд</b>.</p><button class="buy" onclick="closeModal();showAdStub(\'watch\')">📺 Смотреть видео</button></div>';
+  }
+  return '<div class="modal-item"><b>🎁 Бонус за видео</b><p>Посмотри видео и получи монеты. Награда начисляется только после подтверждённого просмотра.</p><button class="buy" onclick="closeModal();showAdStub(\'free\')">📺 Смотреть видео</button></div>';
+}
+
+/* ================= НАСТРОЙКИ ================= */
+function renderSettings(){
+  document.getElementById('btnSound').textContent=S.settings.sound?'Вкл':'Выкл';
+  document.getElementById('btnMusic').textContent=S.settings.music?'Вкл':'Выкл';
+  document.getElementById('btnAnim').textContent=S.settings.anim?'Вкл':'Выкл';
+  document.getElementById('volRange').value=Math.round(S.settings.volume*100);
+  document.getElementById('mvolRange').value=Math.round(S.settings.musicVolume*100);
+  document.body.classList.toggle('no-anim',!S.settings.anim);
+}
+function toggleSound(){S.settings.sound=!S.settings.sound;renderSettings();save();}
+function toggleMusic(){S.settings.music=!S.settings.music;if(S.settings.music)startMusic();else stopMusic();renderSettings();save();}
+function toggleAnim(){S.settings.anim=!S.settings.anim;renderSettings();save();}
+function setVol(v){S.settings.volume=Math.max(0.01,v/100);save();}
+function setMVol(v){S.settings.musicVolume=Math.max(0.01,v/100);save();}
+function resetSave(){
+  if(!confirm('Точно сбросить весь прогресс? Это действие необратимо.'))return;
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+  location.reload();
+}
+
+/* ================= ЗВУК ================= */
+var AC=null;
+function ac(){
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(AC&&AC.state==='suspended')AC.resume();
+  return AC;
+}
+function tone(f1,f2,dur,type,vol,delay){
+  var c=ac();if(!c)return;
+  delay=delay||0;
+  var v=Math.max(0.0001,vol*(S.settings.volume===0?0.001:S.settings.volume));
+  var o=c.createOscillator(),g=c.createGain();
+  o.type=type;
+  o.frequency.setValueAtTime(f1,c.currentTime+delay);
+  if(f2)o.frequency.exponentialRampToValueAtTime(f2,c.currentTime+delay+dur);
+  g.gain.setValueAtTime(v,c.currentTime+delay);
+  g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+delay+dur);
+  o.connect(g);g.connect(c.destination);
+  o.start(c.currentTime+delay);o.stop(c.currentTime+delay+dur+0.05);
+}
+var lastSfxTime=0;
+function sfx(name){
+  if(!S.settings.sound)return;
+  lastSfxTime=Date.now();
+  if(name==='click')tone(700,300,0.1,'triangle',0.18);
+  else if(name==='ui')tone(560,420,0.055,'sine',0.10);
+  else if(name==='crit'){tone(500,900,0.15,'sawtooth',0.2);tone(750,1200,0.15,'sine',0.15,0.05);}
+  else if(name==='buy'){tone(400,650,0.12,'sine',0.2);tone(650,900,0.12,'sine',0.15,0.08);}
+  else if(name==='reward'){tone(523,0,0.15,'sine',0.2);tone(659,0,0.15,'sine',0.2,0.1);tone(784,0,0.2,'sine',0.2,0.2);}
+  else if(name==='level'){[440,554,659,880].forEach(function(f,i){tone(f,0,0.18,'sine',0.18,i*0.09);});}
+  else if(name==='combo'){[600,750,900,1100].forEach(function(f,i){tone(f,0,0.1,'square',0.12,i*0.05);});}
+  else if(name==='combo2'){[600,800,1000,1200,1500].forEach(function(f,i){tone(f,0,0.1,'square',0.14,i*0.05);});}
+}
+
+/* ================= МУЗЫКА ================= */
+var musicTimer=null,sparkleTimer=null,chordIdx=0;
+var CHORDS=[[220,261.6,329.6],[174.6,220,261.6],[196,246.9,293.7],[164.8,207.7,246.9]];
+function padNote(f,dur,vol){
+  var c=ac();if(!c)return;
+  var o=c.createOscillator(),g=c.createGain(),fl=c.createBiquadFilter();
+  o.type='sine';o.frequency.value=f;
+  fl.type='lowpass';fl.frequency.value=800;
+  var v=Math.max(0.0001,vol*(S.settings.musicVolume||0.4));
+  g.gain.setValueAtTime(0.0001,c.currentTime);
+  g.gain.linearRampToValueAtTime(v,c.currentTime+1.5);
+  g.gain.linearRampToValueAtTime(0.0001,c.currentTime+dur);
+  o.connect(fl);fl.connect(g);g.connect(c.destination);
+  o.start();o.stop(c.currentTime+dur+0.1);
+}
+function startMusic(){
+  if(musicTimer)return;
+  chordIdx=0;
+  var loop=function(){
+    var ch=CHORDS[chordIdx%CHORDS.length];
+    chordIdx++;
+    ch.forEach(function(f){padNote(f,7,0.05);});
+  };
+  loop();
+  musicTimer=setInterval(loop,6000);
+  sparkleTimer=setInterval(function(){
+    if(Math.random()<0.5){
+      var f=[880,1046,1318,1568][Math.floor(Math.random()*4)];
+      padNote(f,2,0.02);
+    }
+  },3000);
+}
+function stopMusic(){
+  if(musicTimer)clearInterval(musicTimer);
+  if(sparkleTimer)clearInterval(sparkleTimer);
+  musicTimer=null;sparkleTimer=null;
+}
+document.addEventListener('click',function(e){
+  var button=e.target.closest('button');
+  if(!button||button.disabled)return;
+  if(Date.now()-lastSfxTime>80)sfx('ui');
+});
+
+function firstGesture(){
+  ac();
+  if(S.settings.music)startMusic();
+  document.removeEventListener('pointerdown',firstGesture);
+}
+
+/* ================= ИГРОВОЙ ЦИКЛ ================= */
+function tick(){
+  if(adPaused)return;
+  var inc=getIncome()/10;
+  if(inc>0)addMoney(inc);
+  S.playTime+=0.1;S.adBreakSeconds=(S.adBreakSeconds||0)+0.1;
+  updatePeriodStat('time',0.1);checkTitles();
+  if(combo>0&&Date.now()-lastClick>1500){combo=0;updateCombo();}
+  maybeEvent();
+  renderBanner();
+  updateUI();
+  // Рекламная пауза через каждые 10 минут активной игры.
+  if(S.adBreakSeconds>=600&&!modalType&&!document.hidden&&yandexReady)showTimedAdBreak();
+}
+function prepareReturnGift(){
+  var now=Date.now(),last=Number(S.lastSessionAt)||now,away=Math.max(0,now-last);
+  S.returnGiftPending=null;
+  if(away>=14*86400000)S.returnGiftPending={tier:4,amount:Math.max(20000000,Math.floor(getIncome()*3600)),label:'Легендарное возвращение'};
+  else if(away>=7*86400000)S.returnGiftPending={tier:3,amount:Math.max(8000000,Math.floor(getIncome()*2400)),label:'Невероятное возвращение'};
+  else if(away>=3*86400000)S.returnGiftPending={tier:2,amount:Math.max(2000000,Math.floor(getIncome()*900)),label:'Большое возвращение'};
+  else if(away>=86400000)S.returnGiftPending={tier:1,amount:Math.max(500000,Math.floor(getIncome()*240)),label:'Рады видеть снова'};
+  S.lastSessionAt=now;save();
+}
+function claimReturnGift(){
+  var g=S.returnGiftPending;if(!g)return;
+  S.returnGiftPending=null;addMoney(g.amount);addXp(g.tier*400);
+  if(g.tier>=2)S.wheel.bonusSpins=(S.wheel.bonusSpins||0)+1;
+  if(g.tier>=3)grantEgg('rare');
+  if(g.tier>=4)grantRandomPet('epic');
+  toast('🎁 '+g.label+': +'+fmt(g.amount)+' монет');sfx('reward');
+  save();updateUI();if(modalType==='returngift')closeModal();
+}
+function htmlReturnGift(){
+  var g=S.returnGiftPending;if(!g)return '<div class="modal-item">Подарок уже получен.</div>';
+  var icon=g.tier===4?'👑':g.tier===3?'💎':g.tier===2?'🎡':'🎁';
+  var extras=g.tier>=4?' + опыт + вращение + редкое яйцо + эпический питомец':g.tier>=3?' + опыт + вращение + редкое яйцо':g.tier>=2?' + опыт + бонусное вращение':' + опыт';
+  return '<div class="modal-item" style="text-align:center"><div style="font-size:54px">'+icon+'</div><h3>'+g.label+'!</h3><p>Ты отсутствовал некоторое время — мы приготовили для тебя особый подарок. Возвращайся почаще, впереди ещё больше наград!</p><div class="offline-limit">+'+fmt(g.amount)+' монет</div><p style="color:#ffd45c;font-weight:700">'+extras+'</p><button class="buy" style="width:100%" onclick="claimReturnGift()">🎁 ЗАБРАТЬ ПОДАРОК</button></div>';
+}
+
+function offlineIncome(){
+  var now=Date.now();
+  var previous=Number(S.lastSeen)||Number(S.lastSave)||now;
+  var elapsed=Math.max(0,(now-previous)/1000);
+  var seconds=Math.min(elapsed,24*3600);
+  S.lastSeen=now;
+  if(!S.offlinePending&&seconds>=60&&getIncome()>0){
+    S.offlinePending={seconds:seconds,amount:getIncome()*seconds*0.5*(1+upLvl('offlineboost')*0.1)};
+  }
+  save();
+}
+
+
+/* ================= FINAL UPDATE: ПИТОМЦЫ, КОЛЕСО, ТИТУЛЫ ================= */
+var PETS=[
+ {id:'sprout',name:'Росточек',icon:'🌱',rarity:'common',bonus:0.03,type:'income'},
+ {id:'kitten',name:'Монетный кот',icon:'🐱',rarity:'common',bonus:0.04,type:'click'},
+ {id:'slime',name:'Слизняк',icon:'🟢',rarity:'common',bonus:0.05,type:'income'},
+ {id:'pup',name:'Щенок удачи',icon:'🐶',rarity:'common',bonus:0.06,type:'click'},
+ {id:'bee',name:'Золотая пчела',icon:'🐝',rarity:'rare',bonus:0.09,type:'income'},
+ {id:'fox',name:'Рыжая лиса',icon:'🦊',rarity:'rare',bonus:0.11,type:'click'},
+ {id:'owl',name:'Мудрая сова',icon:'🦉',rarity:'rare',bonus:0.12,type:'income'},
+ {id:'shark',name:'Неоновая акула',icon:'🦈',rarity:'epic',bonus:0.18,type:'click'},
+ {id:'unicorn',name:'Единорог',icon:'🦄',rarity:'epic',bonus:0.2,type:'income'},
+ {id:'phoenix',name:'Феникс',icon:'🔥',rarity:'legendary',bonus:0.3,type:'all'},
+ {id:'dragon',name:'Дракон Верити',icon:'🐉',rarity:'legendary',bonus:0.35,type:'all'},
+ {id:'cosmo',name:'Космический кит',icon:'🐳',rarity:'mythic',bonus:0.5,type:'all'},
+ {id:'voidpet',name:'Питомец Пустоты',icon:'👾',rarity:'mythic',bonus:0.6,type:'all'},
+ {id:'secretstar',name:'Звёздный секрет',icon:'🌠',rarity:'mythic',bonus:0.75,type:'all',secret:true}
+];
+var EGGS=[
+ {id:'basic',name:'Обычное яйцо',icon:'🥚',price:3000,weights:{common:60,uncommon:25,rare:13,epic:2}},
+ {id:'rare',name:'Редкое яйцо',icon:'🔵',price:25000,weights:{common:20,uncommon:30,rare:35,epic:13,legendary:2}},
+ {id:'epic',name:'Эпическое яйцо',icon:'🟣',price:250000,weights:{uncommon:10,rare:30,epic:40,legendary:18,mythic:2}},
+ {id:'legendary',name:'Легендарное яйцо',icon:'🟡',price:2500000,weights:{rare:10,epic:30,legendary:45,mythic:15}},
+ {id:'mythic',name:'Мифическое яйцо',icon:'🌈',price:25000000,weights:{epic:10,legendary:45,mythic:45}}
+];
+var PET_RARITY={common:'Обычный',uncommon:'Необычный',rare:'Редкий',epic:'Эпический',legendary:'Легендарный',mythic:'Мифический'};
+PETS.push(
+ {id:'turtle',name:'Кристальная черепаха',icon:'🐢',rarity:'uncommon',bonus:.07,type:'income'},
+ {id:'rabbit',name:'Прыгучий кролик',icon:'🐰',rarity:'uncommon',bonus:.08,type:'click'},
+ {id:'penguin',name:'Ледяной пингвин',icon:'🐧',rarity:'uncommon',bonus:.08,type:'income'},
+ {id:'raccoon',name:'Енот-кладоискатель',icon:'🦝',rarity:'uncommon',bonus:.09,type:'click'},
+ {id:'bat',name:'Ночная летучая мышь',icon:'🦇',rarity:'rare',bonus:.13,type:'income'},
+ {id:'deer',name:'Сияющий олень',icon:'🦌',rarity:'rare',bonus:.14,type:'click'},
+ {id:'octopus',name:'Осьминог-маг',icon:'🐙',rarity:'epic',bonus:.21,type:'income'},
+ {id:'tiger',name:'Неоновый тигр',icon:'🐯',rarity:'epic',bonus:.23,type:'click'},
+ {id:'griffin',name:'Золотой грифон',icon:'🦅',rarity:'legendary',bonus:.38,type:'all'},
+ {id:'leviathan',name:'Левиафан',icon:'🐲',rarity:'legendary',bonus:.42,type:'all'},
+ {id:'nebula',name:'Туманность',icon:'☄️',rarity:'mythic',bonus:.65,type:'all'},
+ {id:'stardust',name:'Звёздная пыль',icon:'✨',rarity:'mythic',bonus:.7,type:'all'},
+ {id:'crownpet',name:'Королевский хранитель',icon:'🪽',rarity:'mythic',bonus:.8,type:'all'},
+ {id:'secretmoon',name:'Лунный секрет',icon:'🌙',rarity:'mythic',bonus:.9,type:'all',secret:true},
+ {id:'mimic',name:'Мимик-сундук',icon:'🧰',rarity:'uncommon',bonus:.1,type:'income'},
+ {id:'robotpet',name:'Мини-робот',icon:'🤖',rarity:'uncommon',bonus:.11,type:'click'}
+);
+var petTab='eggs';
+function petSlots(){return 3+(S.pets.slotsLevel||0);}
+function petLuck(){return Math.min(0.9,(S.pets.luckLevel||0)*0.05+upLvl('petluck')*0.03);}
+function getPetMultiplier(type){var mult=1;(S.pets.equipped||[]).forEach(function(uid){var pet=S.pets.inventory.find(function(p){return p.uid===uid;});if(!pet)return;var def=PETS.find(function(x){return x.id===pet.id;});if(!def)return;if(type==='click'&&(def.type==='click'||def.type==='all')||type==='income'&&(def.type==='income'||def.type==='all'))mult*=1+def.bonus*(1+(pet.level-1)*0.15);});return mult;}
+function getTitleMultiplier(){var t=TITLE_DEFS.concat(RANK_TITLES).find(function(x){return x.name===S.titles.equipped;});if(t&&t.period&&t.period!=='all'){var exp=(S.titles.rankExpires||{})[t.name]||0;if(exp<Date.now())return 1;}return t?1+(t.bonus||0):1;}
+function updatePeriodStat(field,amount){var now=new Date(),day=now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate(),monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));var week=monday.getFullYear()+'-'+(monday.getMonth()+1)+'-'+monday.getDate(),month=now.getFullYear()+'-'+(now.getMonth()+1);[['day',day],['week',week],['month',month]].forEach(function(x){var obj=S.periodStats[x[0]];if(obj.key!==x[1]){obj.key=x[1];obj.clicks=0;obj.coins=0;obj.time=0;obj.prestiges=0;}obj[field]=(obj[field]||0)+amount;});}
+function showPetTab(tab){petTab=tab;document.querySelectorAll('.pet-tab').forEach(function(b,i){b.classList.toggle('active',['eggs','inventory','luck','collection'][i]===tab);});renderPets();}
+function renderPets(){var grid=document.getElementById('petGrid');if(!grid)return;document.getElementById('petCount').textContent=new Set(S.pets.inventory.map(function(p){return p.id;})).size+'/'+PETS.length;document.getElementById('petSlots').textContent=petSlots();var html='';
+ if(petTab==='eggs'){EGGS.forEach(function(e){html+='<div class="pet-card"><div class="pet-art">'+e.icon+'</div><b>'+e.name+'</b><small>Шанс редких питомцев выше в дорогих яйцах</small><p class="price">'+coinIcon()+fmt(e.price)+'</p><button class="buy" onclick="buyEgg(\''+e.id+'\')">Купить и открыть</button></div>';});}
+ if(petTab==='inventory'){if(!S.pets.inventory.length)html='<div class="modal-item" style="grid-column:1/-1">Пока питомцев нет. Купи первое яйцо!</div>';S.pets.inventory.forEach(function(p){var d=PETS.find(function(x){return x.id===p.id;});if(!d)return;var equipped=S.pets.equipped.indexOf(p.uid)!==-1;html+='<div class="pet-card"><div class="pet-art">'+d.icon+'</div><b>'+d.name+'</b><small class="rarity-'+d.rarity+'">'+PET_RARITY[d.rarity]+' • ур. '+p.level+'</small><small>Бонус '+Math.round(d.bonus*100*(1+(p.level-1)*.15))+'%</small><div class="pet-actions"><button class="buy" onclick="togglePet(\''+p.uid+'\')">'+(equipped?'Снять':'Экипировать')+'</button><button class="buy" onclick="mergePet(\''+p.uid+'\')">Улучшить ×3</button></div></div>';});}
+ if(petTab==='luck'){var cost=Math.floor(50000*Math.pow(2.2,S.pets.luckLevel||0));var slotCost=Math.floor(250000*Math.pow(3,S.pets.slotsLevel||0));html='<div class="pet-card"><div class="pet-art">🍀</div><b>Удача '+(S.pets.luckLevel||0)+'/15</b><small>+5% к шансу выпадения редких питомцев за уровень</small><p class="price">'+coinIcon()+fmt(cost)+'</p><button class="buy" onclick="buyPetUpgrade(\'luck\')">Улучшить удачу</button></div><div class="pet-card"><div class="pet-art">⭐</div><b>Слоты экипировки</b><small>Сейчас доступно '+petSlots()+' слота</small><p class="price">'+coinIcon()+fmt(slotCost)+'</p><button class="buy" onclick="buyPetUpgrade(\'slots\')">+1 слот</button></div>';}
+ if(petTab==='collection'){PETS.forEach(function(d){var count=S.pets.inventory.filter(function(p){return p.id===d.id;}).length;html+='<div class="pet-card"><div class="pet-art">'+(count?d.icon:'❔')+'</div><b>'+(count?d.name:'Неизвестный питомец')+'</b><small class="rarity-'+d.rarity+'">'+PET_RARITY[d.rarity]+'</small><small>'+(count?'В коллекции: '+count:'Ещё не найден')+'</small></div>';});}
+ grid.innerHTML=html;}
+function rollPet(egg){var rarityList=Object.keys(egg.weights),weights=Object.assign({},egg.weights);var luck=petLuck();if(luck){var boost=1+luck*2;['rare','epic','legendary','mythic'].forEach(function(r){if(weights[r])weights[r]*=boost;});if(weights.common)weights.common=Math.max(1,weights.common*(1-luck));}var total=Object.keys(weights).reduce(function(a,k){return a+weights[k];},0),r=Math.random()*total,rarity='common';for(var i=0;i<rarityList.length;i++){r-=weights[rarityList[i]];if(r<=0){rarity=rarityList[i];break;}}var pool=PETS.filter(function(p){return p.rarity===rarity&&!p.secret;});if(!pool.length)pool=PETS.filter(function(p){return p.rarity===rarity;});return pool[Math.floor(Math.random()*pool.length)];}
+function addPet(def){var uid='pet_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);S.pets.inventory.push({uid:uid,id:def.id,level:1});if(!S.pets.discovered)S.pets.discovered=[];if(S.pets.discovered.indexOf(def.id)===-1)S.pets.discovered.push(def.id);return uid;}
+function grantRandomPet(rarity){var pool=PETS.filter(function(p){return p.rarity===rarity&&!p.secret;});if(!pool.length)pool=PETS.filter(function(p){return p.rarity===rarity;});var p=pool[Math.floor(Math.random()*pool.length)];if(p){addPet(p);toast('🐾 Получен питомец: '+p.name+'!');}}
+function grantEgg(id){var egg=EGGS.find(function(e){return e.id===id;});if(egg){var p=rollPet(egg);addPet(p);S.pets.eggsOpened=(S.pets.eggsOpened||0)+1;toast('🥚 Из яйца вылупился '+p.name+'!');}}
+function buyEgg(id){var e=EGGS.find(function(x){return x.id===id;});if(!e||S.money<e.price){toast('Не хватает монет');return;}S.money-=e.price;grantEgg(id);sfx('reward');checkAchievements();checkTitles();renderPets();updateUI();save();}
+function togglePet(uid){var i=S.pets.equipped.indexOf(uid);if(i>=0)S.pets.equipped.splice(i,1);else if(S.pets.equipped.length<petSlots())S.pets.equipped.push(uid);else{toast('Нет свободных слотов!');return;}renderPets();updateUI();checkTitles();checkAchievements();save();}
+function mergePet(uid){var pet=S.pets.inventory.find(function(p){return p.uid===uid;});if(!pet)return;var copies=S.pets.inventory.filter(function(p){return p.id===pet.id&&p.uid!==uid;});if(copies.length<2){toast('Нужно ещё 2 таких же питомца');return;}var removed=copies.slice(0,2);removed.forEach(function(p){S.pets.equipped=S.pets.equipped.filter(function(x){return x!==p.uid;});S.pets.inventory=S.pets.inventory.filter(function(x){return x.uid!==p.uid;});});pet.level++;toast('✨ Питомец улучшен до уровня '+pet.level+'!');renderPets();updateUI();save();}
+function buyPetUpgrade(type){if(type==='luck'){var l=S.pets.luckLevel||0;if(l>=15)return;var c=Math.floor(50000*Math.pow(2.2,l));if(S.money<c)return toast('Не хватает монет');S.money-=c;S.pets.luckLevel=l+1;}else{var l=S.pets.slotsLevel||0;if(l>=5)return;var c=Math.floor(250000*Math.pow(3,l));if(S.money<c)return toast('Не хватает монет');S.money-=c;S.pets.slotsLevel=l+1;}renderPets();updateUI();save();}
+var TITLE_DEFS=[
+ {name:'Новичок',desc:'Начальный титул',bonus:0,unlock:function(){return true;}},{name:'Кликер',desc:'Сделай 1 000 кликов',bonus:.02,unlock:function(){return S.totalClicks>=1000;}},{name:'Богач',desc:'Заработай 1 млн монет',bonus:.03,unlock:function(){return S.totalEarned>=1e6;}},{name:'Ветеран',desc:'Достигни 25 уровня',bonus:.04,unlock:function(){return S.level>=25;}},{name:'Перерождённый',desc:'Сделай 5 престижей',bonus:.05,unlock:function(){return S.prestige>=5;}},{name:'Коллекционер',desc:'Собери 10 разных питомцев',bonus:.04,unlock:function(){return new Set(S.pets.inventory.map(function(p){return p.id;})).size>=10;}},{name:'Повелитель яиц',desc:'Открой 25 яиц',bonus:.05,unlock:function(){return (S.pets.eggsOpened||0)>=25;}},{name:'Удачливый',desc:'Прокачай удачу до 10',bonus:.06,unlock:function(){return (S.pets.luckLevel||0)>=10;}},{name:'Мастер комбо',desc:'Набери комбо 50',bonus:.04,unlock:function(){return S.maxCombo>=50;}},{name:'Легенда Verity',desc:'Сделай 10 престижей',bonus:.1,unlock:function(){return S.prestige>=10;}}
+];
+var RANK_TITLES=[{name:'Легенда дня',period:'day',rank:1,bonus:.08},{name:'Герой дня',period:'day',rank:2,bonus:.05},{name:'Звезда дня',period:'day',rank:3,bonus:.03},{name:'Элита недели',period:'week',rank:1,bonus:.1},{name:'Чемпион недели',period:'week',rank:2,bonus:.06},{name:'Мастер недели',period:'week',rank:3,bonus:.04},{name:'Повелитель месяца',period:'month',rank:1,bonus:.15},{name:'Легенда месяца',period:'month',rank:2,bonus:.1},{name:'Звезда месяца',period:'month',rank:3,bonus:.06},{name:'Бессмертная легенда',period:'all',rank:1,bonus:.2}];
+function checkTitles(){TITLE_DEFS.forEach(function(t){if(t.unlock()&&S.titles.owned.indexOf(t.name)===-1){S.titles.owned.push(t.name);toast('👑 Новый титул: '+t.name);sfx('reward');}});}
+function wearTitle(name){if(S.titles.owned.indexOf(name)<0)return;var rt=RANK_TITLES.find(function(x){return x.name===name;});if(rt&&rt.period!=='all'&&((S.titles.rankExpires||{})[name]||0)<Date.now()){toast('Срок этого титула закончился');return;}S.titles.equipped=name;renderModal();updateUI();save();}
+function htmlTitles(){checkTitles();return '<div class="modal-item"><p>Надетый титул: <span class="title-pill">'+escapeHtml(S.titles.equipped||'Новичок')+'</span></p><p>Бонус титула действует, пока он надет.</p></div>'+TITLE_DEFS.concat(RANK_TITLES).map(function(t){var owned=S.titles.owned.indexOf(t.name)!==-1,wear=S.titles.equipped===t.name;return '<div class="modal-item"><b>'+(owned?'👑 ':'🔒 ')+escapeHtml(t.name)+'</b><p>'+t.desc+'</p><p>Бонус: +'+Math.round(t.bonus*100)+'% ко всему доходу</p>'+(owned?'<button class="buy" onclick="wearTitle(\''+t.name+'\')" '+(wear?'disabled':'')+'>'+(wear?'Надет':'Надеть')+'</button>':'')+'</div>';}).join('');}
+function periodKey(kind){var d=new Date();if(kind==='day')return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();if(kind==='month')return d.getFullYear()+'-'+(d.getMonth()+1);var jan=new Date(d.getFullYear(),0,1),week=Math.ceil((((d-jan)/86400000)+jan.getDay()+1)/7);return d.getFullYear()+'-W'+week;}
+function wheelDailyReset(){var key=new Date().toDateString();if(S.wheel.adDate!==key){S.wheel.adDate=key;S.wheel.adCount=0;}}
+function htmlWheel(){wheelDailyReset();var free=(S.wheel.freeAt||0)<=Date.now(),ads=Math.max(0,5-(S.wheel.adCount||0));return '<div class="wheel-pointer">▼</div><div class="wheel" id="fortuneWheel"></div><p class="lb-note" style="text-align:center">🎁 Бесплатное вращение: '+(free?'доступно':'через '+formatDuration(Math.ceil((S.wheel.freeAt-Date.now())/1000)))+'<br>📺 Рекламных вращений сегодня: '+ads+'/5</p><button class="buy" style="width:100%" onclick="spinWheel(false)" '+(!free&&(S.wheel.bonusSpins||0)<=0?'disabled':'')+'>🎡 Крутить бесплатно</button><button class="buy" style="width:100%;margin-top:8px" onclick="spinWheel(true)" '+(ads<=0?'disabled':'')+'>📺 Реклама — вращение ('+ads+'/5)</button><p class="lb-note">Секретный скин и секретный питомец имеют очень маленький шанс выпадения.</p>'}
+function spinWheel(ad){wheelDailyReset();if(ad){if(S.wheel.adCount>=5)return toast('Лимит рекламы на сегодня исчерпан');showRewardedAd(function(){S.wheel.adCount++;doWheelSpin();});return;}if(S.wheel.bonusSpins>0)S.wheel.bonusSpins--;else if(S.wheel.freeAt>Date.now())return toast('Бесплатное вращение ещё не готово');else S.wheel.freeAt=Date.now()+86400000;doWheelSpin();}
+function doWheelSpin(){var roll=Math.random()*100,prize;if(roll<.05){prize='secretPet';}else if(roll<.15){prize='secretSkin';}else if(roll<1.5){prize='legendaryPet';}else if(roll<5){prize='epicPet';}else if(roll<12){prize='bigCoins';}else if(roll<25){prize='mediumCoins';}else if(roll<38){prize='egg';}else{prize='coins';}S.wheel.totalSpins=(S.wheel.totalSpins||0)+1;
+ var wheel=document.getElementById('fortuneWheel');if(wheel){wheel.style.transform='rotate('+(1440+Math.floor(Math.random()*360)+45)+'deg)';}
+ setTimeout(function(){if(prize==='secretPet'){var d=PETS.find(function(p){return p.id==='secretstar';});addPet(d);toast('🌠 СЕКРЕТНЫЙ ПИТОМЕЦ!');}else if(prize==='secretSkin'){var sk=SKINS.find(function(x){return x.id==='secret';});if(sk&&S.skinsOwned.indexOf(sk.id)<0)S.skinsOwned.push(sk.id);toast('🌟 СЕКРЕТНЫЙ СКИН ОТКРЫТ!');}else if(prize==='legendaryPet')grantRandomPet('legendary');else if(prize==='epicPet')grantRandomPet('epic');else if(prize==='bigCoins')addMoney(Math.max(1000000,getIncome()*3600));else if(prize==='mediumCoins')addMoney(Math.max(100000,getIncome()*600));else if(prize==='egg')grantEgg('rare');else addMoney(Math.max(5000,getIncome()*60));toast('🎡 Колесо принесло награду!');if(modalType==='wheel')renderModal();checkAchievements();checkTitles();save();updateUI();sfx('reward');},4100);}
+
+/* ================= ЗАПУСК ================= */
+function init(){
+  applySkin();
+  offlineIncome();
+  ensureQuests();
+  prepareReturnGift();
+  renderShop();
+  renderSkins();
+  renderSettings();
+  renderPets();checkTitles();
+  updateUI();
+  checkAchievements();
+  setAdPreview();
+  initYandexSDK();
+  setInterval(tick,100);setInterval(function(){if(modalType==='daily')renderModal();},1000);
+  setInterval(save,5000);
+  setInterval(syncLeaderboards,60000);
+  window.addEventListener('beforeunload',function(){S.lastSessionAt=Date.now();save();});
+  window.addEventListener('pagehide',function(){S.lastSessionAt=Date.now();save();});
+  document.addEventListener('pointerdown',firstGesture);
+  if(S.offlinePending)setTimeout(function(){if(S.offlinePending)openModal('offline');else if(S.returnGiftPending)openModal('returngift');},700);
+  else if(S.returnGiftPending)setTimeout(function(){if(S.returnGiftPending)openModal('returngift');},700);
+}
+init();
+</script>
+</body>
+</html>
